@@ -164,9 +164,9 @@ void fiveplot(int grid)
 	// so i think the range of gamma is between -1/(p-1) and 1, but I need to check this!!
 	//
 	
-	//for (int gi = 0; gi <= 2; gi++)
-	//{
-		int gi = 2;
+	for (int gi = 0; gi <= 2; gi++)
+	{
+		//int gi = 2;
 		
 		string filename = "measfp_" + to_string((int)p) + "_" + to_string((int)(10*mu)) + "_" + to_string(gi) + ".txt"; // changed to hist for sigma != 0
 		ofstream file; file.open(filename);
@@ -215,7 +215,7 @@ void fiveplot(int grid)
 		}
 		file.close();
 		//if (gi != 2) critfile << ",";
-	//}
+	}
 	//critfile.close();
 }
 	
