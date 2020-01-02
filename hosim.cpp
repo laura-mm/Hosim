@@ -10,14 +10,14 @@
 #include <random>
 #include <fstream>
 #include <omp.h>
-#include <eigen3/Eigen/Dense>
-#include <eigen3/unsupported/Eigen/CXX11/Tensor>
+#include <Eigen/Dense>
+#include <unsupported/Eigen/CXX11/Tensor>
 #include <iomanip>
 using namespace Eigen;
 using namespace std;
 random_device generator;
 mt19937 twist(generator());
-IOFormat p(20, DontAlignCols, ",", ",", "", "", "", "");
+//IOFormat p(20, DontAlignCols, ",", ",", "", "", "", "");
 IOFormat c(6, DontAlignCols, ",", ",", "", "", "", "");
 normal_distribution<double> distributionn(0.0, 1.0);
 uniform_real_distribution<double> distributionr(0.0, 1.0);
@@ -31,6 +31,7 @@ double dt;
 ArrayXd mu(4);
 ArrayXd gama(4); // should this maybe be a Vector or a Tensor?
 ArrayXd sigma(4); // its ok for now but may need to be different in numerical solution
+int p;
 
 template<typename T>
 using  ArrayType = Eigen::Array<T, Eigen::Dynamic, 1>;
@@ -44,6 +45,8 @@ auto Tarr(const Eigen::Tensor<Scalar, 1> &tensor,const sizeType rows) // this fu
 typedef Eigen::IndexPair<int> IP;
 Eigen::array<IP, 1> d10 = { IP(1, 0) }; // second index of T
 
+
+// this is some things i picked up from the internet
 //void randomise(Tensor
 // Create a 4 x 3 tensor of floats.
 // TensorFixedSize<float, Sizes<4, 3>> t_4x3;
@@ -80,6 +83,7 @@ MatrixXd cholesky(int p)
 			{
 				for (int k = 0; k < j; k++) sum += (low(i, k)*low(j,k));
 				low(i, j) = (gama(p-2) - sum)/low(j, j);
+				 
 			}
 		}
 	}
@@ -110,6 +114,7 @@ Tensor<double, 2> order2()
 	}
 	return A;
 }
+/*
 Tensor<double, 3> order3()
 {
 	Tensor<double, 3> A(N, N, N);
@@ -209,7 +214,7 @@ class simulation
 	Tensor<double, 2> A; Tensor<double, 3> B; Tensor<double, 4> C; Tensor<double, 5> D;
 	Tensor<double, 1> x; Tensor<double, 1> y; Tensor<double, 1> k;
 	bool fixed; bool unique; bool diverge;
-	vector<Tensor<double, 1>> trajx; vector<Tensor<double, 1>> trajy; //
+	vector<Tensor<ArrayXd> trajx; vector<ArrayXd> trajy; //
 	simulation()
 	{
 		diverge = false;
@@ -304,24 +309,19 @@ class simulation
 
 			trajx.push_back(Tarr(x, N)); trajy.push_back(Tarr(y, N)); //
 
-			if (t >= 0.99*T) {trajx.push_back(Tarr(x, N)); trajy.push_back(Tarr(y, N));} //
+			//if (t >= 0.99*T) {trajx.push_back(Tarr(x, N)); trajy.push_back(Tarr(y, N));} //
 
 		}
 		fixed = check_fixed();
 		unique = check_unique();
 	}
-
-
-/////////////// good up to here, go from here!
-
-
-
 	ArrayXd measures()
 	{
-		ArrayXd m = ArrayXd::Zero(8); // top, middle, bottom, M, q, diversity, dsq, h, the last 3 are relative things
+		ArrayXd m = ArrayXd::Zero(6); // phi, M, q, diversity, dsq, h, the last 3 are relative things
 		
 		ArrayXd sum1 = ArrayXd::Zero(N);
 		ArrayXd sum2 = ArrayXd::Zero(N);
+		double Msq = 0.0;
 
 		for (int t = 0; t < 0.01*T; t++)
 		{
@@ -330,17 +330,13 @@ class simulation
 
 			double M = trajx[t].mean();
 			double q = (trajx[t]*trajx[t]).mean();
-			for (int i = 0; i < N; i++)
-			{
-				if (abs(trajx[t](i) - 1.0 - a) < 0.0001) m(0) ++;
-				else if (abs(trajx[t](i) - 1.0 + a) < 0.0001 || abs(trajx[t](i)) < 0.0001) m(2) ++;
-				else m(1) ++;
-			}
+			for (int i = 0; i < N; i++) if (trajx[t](i) > 0.0001) m(0) ++;
 
-			m(3) += M;
-			m(4) += q;
-			m(5) += M*M/q;
-			m(6) += (((trajx[t] - trajy[t])*(trajx[t] - trajy[t])).mean())/(M*M);
+			m(1) += M;
+			m(2) += q;
+			m(3) += M*M/q;
+			m(4) += (((trajx[t] - trajy[t])*(trajx[t] - trajy[t])).mean());
+			Msq += M*M;
 		}
 		
 
@@ -348,15 +344,13 @@ class simulation
 		sum2 /= (0.01*(double)T);
 
 		m(0) /= 0.01*(double)N*(double)T;
-		m(1) /= 0.01*(double)N*(double)T;
-		m(2) /= 0.01*(double)N*(double)T;
+		m(1) /= 0.01*(double)T;
+		m(2) /= 0.01*(double)T;
 		m(3) /= 0.01*(double)T;
-		m(4) /= 0.01*(double)T;
-		m(5) /= 0.01*(double)T;
-		m(6) /= 0.01*(double)T;
+		m(4) /= Msq;
 
 		sum2 -= (sum1*sum1);
-		m(7) = sum2.mean()/(sum1*sum1).mean(); // try this now
+		m(5) = sum2.mean()/(sum1*sum1).mean();
 
 		return m;
 	}
@@ -364,24 +358,24 @@ class simulation
 };
 
 
-void fiveplot(int grid, int runs)
+void fiveplot(int grid, int runs) // for a single p with mu = 0
 {
-	string filename = "homeas_" + to_string((int)(10*mu)) + ".txt"; //
+	string filename = "homeas_" + to_string((int)p) + "_" + to_string((int)(10*mu)) + ".txt"; //
 	ofstream file; file.open(filename);
-	for (int g = 0; g <= 4; g++)
+	for (int g = 0; g <= 2; g++)
 	{
-		double gamma = (0.5*(double)g) - 1.0; 
+		gama(p-2) = gama = ((p - 2.0)*gi*gi/(2.0*(p - 1.0))) + ((4.0 - p)*gi/(2.0*(p - 1.0))) -1.0/(p - 1.0);
 		for (int s = 0; s <= grid; s++)
 		{
 			double po = (2.0*s/(double)grid) - 1.0;
-			double sigma = pow(10.0, po);
+			sigma(p-2) = pow(10.0, po);
 
-			ArrayXd meas = ArrayXd::Zero(8);
+			ArrayXd meas = ArrayXd::Zero(6);
 		
 			for (int r = 0; r < runs; r++)
 			{
 				cout << "g " << g << ", s " << s << ", r " << r << endl;
-				simulation sim(sigma, gamma);
+				simulation sim();
 				sim.run();
 				meas += sim.measures();
 			}
@@ -389,7 +383,7 @@ void fiveplot(int grid, int runs)
 			file << meas.format(c);
 			if (s != grid) file << ",";
 		}
-		if (g != 4) file << ",";
+		if (g != 2) file << ",";
 	}
 }
 		
@@ -456,14 +450,18 @@ void plot(double sigma, double gamma, int plots)
 
 int main()	
 {
-	mu = 0.0;
-	//double sigma = 0.5; //pow(10.0, 3.0);
+	gama = ArrayXd::Zero(4);
+	mu = ArrayXd::Zero(4);
+	sigma = ArrayXd::Zero(4);
+	p = 2;
 	N = 200;
+	Nd = (double)N;
 	T = 200000;
 	dt = 0.001;
 	int grid = 20; // for fiveplots
 	int runs = 20;
 	int plots = 20;
+	
 
 
 
@@ -485,7 +483,7 @@ int main()
 	
 	//histogram(runs);
 
-	fiveplot(grid, runs);
+	//fiveplot(grid, runs);
 
 	//plot(pow(10.0, 1.0), 0.0, 20);
 
