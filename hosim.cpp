@@ -203,7 +203,7 @@ Tensor<double, 5> order5()
 	return A;
 }
 		
-
+*/
 
 
 
@@ -211,10 +211,10 @@ Tensor<double, 5> order5()
 class simulation
 {
 	public:
-	Tensor<double, 2> A; Tensor<double, 3> B; Tensor<double, 4> C; Tensor<double, 5> D;
+	Tensor<double, 2> A; //Tensor<double, 3> B; Tensor<double, 4> C; Tensor<double, 5> D;
 	Tensor<double, 1> x; Tensor<double, 1> y; Tensor<double, 1> k;
 	bool fixed; bool unique; bool diverge;
-	vector<Tensor<ArrayXd> trajx; vector<ArrayXd> trajy; //
+	vector<ArrayXd> trajx; vector<ArrayXd> trajy; //
 	simulation()
 	{
 		diverge = false;
@@ -222,7 +222,7 @@ class simulation
 		for (int i = 0; i < N; i++) {x(i) = distributionr(twist); y(i) = distributionr(twist); k(i) = 1.0;}
 		trajx.push_back(Tarr(x, N)); trajy.push_back(Tarr(y, N)); //
 		A = order2(); //B = order3(); C = order4(); D = order5();
-		B.setZero(); C.setZero(); D.setZero();
+		//B.setZero(); C.setZero(); D.setZero();
 	}
 	~simulation() {}
 	void check() // this is for traj only last 1% and this does each species induvidually
@@ -243,6 +243,7 @@ class simulation
 	{
 		for (int t = 0; t < T; t++)
 		{
+			//cout << t << endl;
 
 			// should comment out a lot of this stuff when isolating orders
 
@@ -250,27 +251,31 @@ class simulation
 
 			Tensor<double, 1> k1 = dt*x*(k - x
 			+ A.contract(x, d10) 
-			+ B.contract(x, d10).contract(x, d10)
-			+ C.contract(x, d10).contract(x, d10).contract(x, d10)
-			+ D.contract(x, d10).contract(x, d10).contract(x, d10).contract(x, d10));
+			//+ B.contract(x, d10).contract(x, d10)
+			//+ C.contract(x, d10).contract(x, d10).contract(x, d10)
+			//+ D.contract(x, d10).contract(x, d10).contract(x, d10).contract(x, d10)
+			);
 
 			Tensor<double, 1> k2 = dt*(x + (k1/2.0))*(k - (x + (k1/2.0))
 			+ A.contract(x + (k1/2.0), d10)
-			+ B.contract(x + (k1/2.0), d10).contract(x + (k1/2.0), d10)
-			+ C.contract(x + (k1/2.0), d10).contract(x + (k1/2.0), d10).contract(x + (k1/2.0), d10)
-			+ D.contract(x + (k1/2.0), d10).contract(x + (k1/2.0), d10).contract(x + (k1/2.0), d10).contract(x + (k1/2.0), d10));
+			//+ B.contract(x + (k1/2.0), d10).contract(x + (k1/2.0), d10)
+			//+ C.contract(x + (k1/2.0), d10).contract(x + (k1/2.0), d10).contract(x + (k1/2.0), d10)
+			//+ D.contract(x + (k1/2.0), d10).contract(x + (k1/2.0), d10).contract(x + (k1/2.0), d10).contract(x + (k1/2.0), d10)
+			);
 
 			Tensor<double, 1> k3 = dt*(x + (k2/2.0))*(k - (x + (k2/2.0))
 			+ A.contract(x + (k2/2.0), d10)
-			+ B.contract(x + (k2/2.0), d10).contract(x + (k2/2.0), d10)
-			+ C.contract(x + (k2/2.0), d10).contract(x + (k2/2.0), d10).contract(x + (k2/2.0), d10)
-			+ D.contract(x + (k2/2.0), d10).contract(x + (k2/2.0), d10).contract(x + (k2/2.0), d10).contract(x + (k2/2.0), d10));
+			//+ B.contract(x + (k2/2.0), d10).contract(x + (k2/2.0), d10)
+			//+ C.contract(x + (k2/2.0), d10).contract(x + (k2/2.0), d10).contract(x + (k2/2.0), d10)
+			//+ D.contract(x + (k2/2.0), d10).contract(x + (k2/2.0), d10).contract(x + (k2/2.0), d10).contract(x + (k2/2.0), d10)
+			);
 
 			Tensor<double, 1> k4 = dt*(x + k3)*(k - (x + k3)
 			+ A.contract(x + k3, d10)
-			+ B.contract(x + k3, d10).contract(x + k3, d10)
-			+ C.contract(x + k3, d10).contract(x + k3, d10).contract(x + k3, d10)
-			+ D.contract(x + k3, d10).contract(x + k3, d10).contract(x + k3, d10).contract(x + k3, d10));
+			//+ B.contract(x + k3, d10).contract(x + k3, d10)
+			//+ C.contract(x + k3, d10).contract(x + k3, d10).contract(x + k3, d10)
+			// + D.contract(x + k3, d10).contract(x + k3, d10).contract(x + k3, d10).contract(x + k3, d10)
+			);
 
 			x += (k1 + (2.0*k2) + (2.0*k3) + k4)/6.0;
 
@@ -279,27 +284,31 @@ class simulation
 
 			k1 = dt*y*(k - y
 			+ A.contract(y, d10) 
-			+ B.contract(y, d10).contract(y, d10)
-			+ C.contract(y, d10).contract(y, d10).contract(y, d10)
-			+ D.contract(y, d10).contract(y, d10).contract(y, d10).contract(y, d10));
+			//+ B.contract(y, d10).contract(y, d10)
+			//+ C.contract(y, d10).contract(y, d10).contract(y, d10)
+			//+ D.contract(y, d10).contract(y, d10).contract(y, d10).contract(y, d10)
+			);
 
 			k2 = dt*(y + (k1/2.0))*(k - (y + (k1/2.0))
 			+ A.contract(y + (k1/2.0), d10)
-			+ B.contract(y + (k1/2.0), d10).contract(y + (k1/2.0), d10)
-			+ C.contract(y + (k1/2.0), d10).contract(y + (k1/2.0), d10).contract(y + (k1/2.0), d10)
-			+ D.contract(y + (k1/2.0), d10).contract(y + (k1/2.0), d10).contract(y + (k1/2.0), d10).contract(y + (k1/2.0), d10));
+			//+ B.contract(y + (k1/2.0), d10).contract(y + (k1/2.0), d10)
+			//+ C.contract(y + (k1/2.0), d10).contract(y + (k1/2.0), d10).contract(y + (k1/2.0), d10)
+			//+ D.contract(y + (k1/2.0), d10).contract(y + (k1/2.0), d10).contract(y + (k1/2.0), d10).contract(y + (k1/2.0), d10)
+			);
 
 			k3 = dt*(y + (k2/2.0))*(k - (y + (k2/2.0))
 			+ A.contract(y + (k2/2.0), d10)
-			+ B.contract(y + (k2/2.0), d10).contract(y + (k2/2.0), d10)
-			+ C.contract(y + (k2/2.0), d10).contract(y + (k2/2.0), d10).contract(y + (k2/2.0), d10)
-			+ D.contract(y + (k2/2.0), d10).contract(y + (k2/2.0), d10).contract(y + (k2/2.0), d10).contract(y + (k2/2.0), d10));
+			//+ B.contract(y + (k2/2.0), d10).contract(y + (k2/2.0), d10)
+			//+ C.contract(y + (k2/2.0), d10).contract(y + (k2/2.0), d10).contract(y + (k2/2.0), d10)
+			//+ D.contract(y + (k2/2.0), d10).contract(y + (k2/2.0), d10).contract(y + (k2/2.0), d10).contract(y + (k2/2.0), d10)
+			);
 
 			k4 = dt*(y + k3)*(k - (y + k3)
 			+ A.contract(y + k3, d10)
-			+ B.contract(y + k3, d10).contract(y + k3, d10)
-			+ C.contract(y + k3, d10).contract(y + k3, d10).contract(y + k3, d10)
-			+ D.contract(y + k3, d10).contract(y + k3, d10).contract(y + k3, d10).contract(y + k3, d10));
+			//+ B.contract(y + k3, d10).contract(y + k3, d10)
+			//+ C.contract(y + k3, d10).contract(y + k3, d10).contract(y + k3, d10)
+			//+ D.contract(y + k3, d10).contract(y + k3, d10).contract(y + k3, d10).contract(y + k3, d10)
+			);
 
 			y += (k1 + (2.0*k2) + (2.0*k3) + k4)/6.0;
 
@@ -307,13 +316,12 @@ class simulation
 
 			if (Tarr(x, N).maxCoeff() > pow(10.0, 20.0) || Tarr(y, N).maxCoeff() > pow(10.0, 20.0)) {diverge = true; break;}
 
-			trajx.push_back(Tarr(x, N)); trajy.push_back(Tarr(y, N)); //
+			//trajx.push_back(Tarr(x, N)); trajy.push_back(Tarr(y, N)); //
 
-			//if (t >= 0.99*T) {trajx.push_back(Tarr(x, N)); trajy.push_back(Tarr(y, N));} //
+			if (t >= (0.99*T)-2) {trajx.push_back(Tarr(x, N)); trajy.push_back(Tarr(y, N));} //
 
 		}
-		fixed = check_fixed();
-		unique = check_unique();
+		check();
 	}
 	ArrayXd measures()
 	{
@@ -360,11 +368,11 @@ class simulation
 
 void fiveplot(int grid, int runs) // for a single p with mu = 0
 {
-	string filename = "homeas_" + to_string((int)p) + "_" + to_string((int)(10*mu)) + ".txt"; //
+	string filename = "homeas_" + to_string(p) + "_" + to_string((int)(10*mu(p-2))) + ".txt"; //
 	ofstream file; file.open(filename);
 	for (int g = 0; g <= 2; g++)
 	{
-		gama(p-2) = gama = ((p - 2.0)*gi*gi/(2.0*(p - 1.0))) + ((4.0 - p)*gi/(2.0*(p - 1.0))) -1.0/(p - 1.0);
+		gama(p-2) = ((p - 2.0)*g*g/(2.0*(p - 1.0))) + ((4.0 - p)*g/(2.0*(p - 1.0))) -1.0/(p - 1.0);
 		for (int s = 0; s <= grid; s++)
 		{
 			double po = (2.0*s/(double)grid) - 1.0;
@@ -375,7 +383,7 @@ void fiveplot(int grid, int runs) // for a single p with mu = 0
 			for (int r = 0; r < runs; r++)
 			{
 				cout << "g " << g << ", s " << s << ", r " << r << endl;
-				simulation sim();
+				simulation sim;
 				sim.run();
 				meas += sim.measures();
 			}
@@ -454,16 +462,16 @@ int main()
 	mu = ArrayXd::Zero(4);
 	sigma = ArrayXd::Zero(4);
 	p = 2;
-	N = 200;
+	N = 50; //200;
 	Nd = (double)N;
 	T = 200000;
 	dt = 0.001;
-	int grid = 20; // for fiveplots
-	int runs = 20;
+	int grid = 10; // for fiveplots
+	int runs = 5;
 	int plots = 20;
 	
-
-
+	// everything for p above 2 commented out
+	
 
 	// traj matrix 1%
 
@@ -472,18 +480,10 @@ int main()
 	cout << sim.fixed << endl;
 	cout << sim.unique << endl;*/
 
-
-
-
-
-
-
-
-
 	
 	//histogram(runs);
 
-	//fiveplot(grid, runs);
+	fiveplot(grid, runs);
 
 	//plot(pow(10.0, 1.0), 0.0, 20);
 
