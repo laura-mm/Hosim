@@ -10,64 +10,6 @@ import math
 #plt.rc('axes', titlesize=20)
 #plt.rc('legend', fontsize=20)
 grid = 10
-
-#crit = np.loadtxt('crit_20_0.txt', delimiter=",")
-#crih = np.loadtxt('crit_5_0.txt', delimiter=",")
-
-g0 = np.loadtxt('measfp_2_-20_0.txt', delimiter = ",")
-g0 = g0.reshape(len(g0)/6, 6)
-g0 = np.transpose(g0)
-g1 = np.loadtxt('measfp_2_-20_1.txt', delimiter = ",")
-g1 = g1.reshape(len(g1)/6, 6)
-g1 = np.transpose(g1)
-g2 = np.loadtxt('measfp_2_-20_2.txt', delimiter = ",")
-g2 = g2.reshape(len(g2)/6, 6)
-g2 = np.transpose(g2)
-
-m0 = [g0, g1, g2] # mu = -2
-
-g0 = np.loadtxt('measfp_2_0_0.txt', delimiter = ",")
-g0 = g0.reshape(len(g0)/6, 6)
-g0 = np.transpose(g0)
-g1 = np.loadtxt('measfp_2_0_1.txt', delimiter = ",")
-g1 = g1.reshape(len(g1)/6, 6)
-g1 = np.transpose(g1)
-g2 = np.loadtxt('measfp_2_0_2.txt', delimiter = ",")
-g2 = g2.reshape(len(g2)/6, 6)
-g2 = np.transpose(g2)
-
-m1 = [g0, g1, g2] # mu = 0
-
-g0 = np.loadtxt('measfp_2_20_0.txt', delimiter = ",")
-g0 = g0.reshape(len(g0)/6, 6)
-g0 = np.transpose(g0)
-g1 = np.loadtxt('measfp_2_20_1.txt', delimiter = ",")
-g1 = g1.reshape(len(g1)/6, 6)
-g1 = np.transpose(g1)
-g2 = np.loadtxt('measfp_2_20_2.txt', delimiter = ",")
-g2 = g2.reshape(len(g2)/6, 6)
-g2 = np.transpose(g2)
-
-m2 = [g0, g1, g2] # mu = 2
-
-m = [m0, m1, m2]
-
-
-
-meas0 = np.loadtxt('homeas_2_-20.txt', delimiter=",") # mu = -2
-meas0 = meas0.reshape(3, grid + 1, 6)
-meas0 = np.transpose(meas0, (0, 2, 1)) # gam, meas, sig
-
-meas1 = np.loadtxt('homeas_2_0.txt', delimiter=",") # mu = 0
-meas1 = meas1.reshape(3, grid + 1, 6)
-meas1 = np.transpose(meas1, (0, 2, 1)) # gam, meas, sig
-
-meas2 = np.loadtxt('homeas_2_20.txt', delimiter=",") # mu = 2
-meas2 = meas2.reshape(3, grid + 1, 6)
-meas2 = np.transpose(meas2, (0, 2, 1)) # gam, meas, sig
-
-meas = [meas0, meas1, meas2]
-
 col = ['m', 'c', 'y']
 colo = ['m.', 'c.', 'y.']
 lab = ['$\gamma = -\frac{1}{p-1}$', '$\gamma = 0$', '$\gamma = 1$']
@@ -76,21 +18,34 @@ mark = ['o', 's', '*', 'x', '+']
 x = np.linspace(-1, 1, grid + 1)
 s = np.power(10, x)
 
-# sigma, z1, phi, M, q, help for g
-
+# sigma, z1, phi, M, q, help for measfp
 # phi, M, q, diversity, dsq, h, for meas
 
 # phi, M, diversity
 ###############################################################
 
-plt.subplots(3, 3, figsize=(12,12))
+plt.subplots(3, 2, figsize=(12,8))
 
-for mi in range (3):
-	plt.subplot(3, 3, 1 + mi) # phi
+for mi in range (2):
+
+	meas = np.loadtxt("homeas_{0}_{1}.txt".format(2, 20*(mi - 1)), delimiter=",")
+	meas = meas.reshape(3, grid + 1, 6)
+	meas = np.transpose(meas, (0, 2, 1)) # gam, meas, sig
+	
+	crit = np.loadtxt("crit_{0}_{1}.txt".format(2, 20*(mi - 1)), delimiter=",")
+	
+	measfp = []
 	for gi in range(3):
-		plt.semilogx(m[mi][gi][0], m[mi][gi][2], col[gi])
-		plt.semilogx(s, meas[mi][gi][0], colo[gi], marker = mark[gi], label = lab[gi])
-		#plt.axvline(x = crit[gi], linestyle = '--', color = col[gi])
+		g = np.loadtxt("measfp_{0}_{1}_{2}.txt".format(2, 20*(mi - 1), gi), delimiter = ",")
+		g = g.reshape(len(g)/6, 6)
+		g = np.transpose(g)
+		measfp.append(g)
+		
+	plt.subplot(3, 2, 1 + mi) # phi
+	for gi in range(3):
+		plt.semilogx(measfp[gi][0], measfp[gi][2], col[gi])
+		plt.semilogx(s, meas[gi][0], colo[gi], marker = mark[gi], label = lab[gi])
+		plt.axvline(x = crit[gi], linestyle = '--', color = col[gi])
 	plt.xlim([10**(-1), 10**1])
 	if mi == 0:
 		plt.ylabel("phi")
@@ -101,11 +56,11 @@ for mi in range (3):
 	#plt.title(r'$p = 2$')
 	
 
-	plt.subplot(3, 3, 4 + mi) # M
+	plt.subplot(3, 2, 3 + mi) # M
 	for gi in range(3):
-		plt.semilogx(m[mi][gi][0], m[mi][gi][3], col[gi])
-		plt.semilogx(s, meas[mi][gi][1], colo[gi], marker = mark[gi], label = lab[gi])
-		#plt.axvline(x = crit[gi], linestyle = '--', color = col[gi])
+		plt.semilogx(measfp[gi][0], measfp[gi][3], col[gi])
+		plt.semilogx(s, meas[gi][1], colo[gi], marker = mark[gi], label = lab[gi])
+		plt.axvline(x = crit[gi], linestyle = '--', color = col[gi])
 	plt.xlim([10**(-1), 10**1])
 	#plt.ylabel(r'$M^*$')
 	if mi == 0:
@@ -113,11 +68,11 @@ for mi in range (3):
 	plt.ylim([0.2, 2])
 	#plt.text(6, 1.8, lett[2], fontsize=20)
 
-	plt.subplot(3, 3, 7 + mi) # diversity
+	plt.subplot(3, 2, 5 + mi) # diversity
 	for gi in range(3):
-		plt.semilogx(m[mi][gi][0], m[mi][gi][3]*m[mi][gi][3]/m[mi][gi][4], col[gi])
-		plt.semilogx(s, meas[mi][gi][3], colo[gi], marker = mark[gi], label = lab[gi])
-		#plt.axvline(x = crit[gi], linestyle = '--', color = col[gi])
+		plt.semilogx(measfp[gi][0], measfp[gi][3]*measfp[gi][3]/measfp[gi][4], col[gi])
+		plt.semilogx(s, meas[gi][3], colo[gi], marker = mark[gi], label = lab[gi])
+		plt.axvline(x = crit[gi], linestyle = '--', color = col[gi])
 	plt.xlim([10**(-1), 10**1])
 	#plt.xlabel(r'$\sigma$')
 	plt.xlabel("sigma")
