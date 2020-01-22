@@ -1,5 +1,3 @@
-// changed z2 to match the paper
-// also simplified parameters
 // z1 <= z2
 #include <iostream>
 #include <sstream>
@@ -50,7 +48,9 @@ double X(double z1)
 
 double help(double z1)
 {
-	return phi(z1)/X(z1);
+	//return phi(z1)/X(z1);
+	double sec = second(z1);
+	return sec/(sec + (gama*(p - 1.0)*phi(z1))); // may be better because doesnt rely on other parameters
 }
 // this is undefined for sigma = 0
 
@@ -60,27 +60,22 @@ double first(double z1)
 }
 // this is the first order integral, this can not be zero
 
-double Mcoeff(double z1) // this is the coefficient of first order M in its polynomial
-{
-	//if (z1 == 1.0/0.0) return -1.0;
-	//else 
-	return z1*help(z1)/first(z1);
-}
+
 
 double Mgrad(double z1, double MM, double small)
 {
-	double MMcoeff = Mcoeff(z1);
-	double grad = (MMcoeff*(MM + small)) + (mu*pow((MM + small), p - 1.0)) + k;
-	grad -= (MMcoeff*(MM - small)) + (mu*pow((MM - small), p - 1.0)) + k;
+	double Mcoeff = help(z1)*z1/first(z1); // may be better because doesnt rely on other parameters
+	double grad = (Mcoeff*(MM + small)) + (mu*pow((MM + small), p - 1.0)) + k;
+	grad -= (Mcoeff*(MM - small)) + (mu*pow((MM - small), p - 1.0)) + k;
 	return grad/(2.0*small);
 }
 
 double M(double Mstart, double z1) //this is a solution to a p-order polynomial, so will probably do newton-raphson?
 {
-	double MMcoeff = Mcoeff(z1);
+	double Mcoeff = help(z1)*z1/first(z1); // may be better because doesnt rely on other parameters
 	double MM = Mstart; // maybe we dont need this? I think this should be set to k
 	
-	if (info == true)
+	/*if (info == true)
 	{
 	ofstream mm; mm.open("zz.txt");
 	ofstream ab; ab.open("abs.txt");
@@ -91,16 +86,16 @@ double M(double Mstart, double z1) //this is a solution to a p-order polynomial,
 	{
 		double m = (0.00001*(double)i);
 		mm << m;
-		ab << (MMcoeff*m) + (mu*pow(m, p - 1.0)) + k;
+		ab << (Mcoeff*m) + (mu*pow(m, p - 1.0)) + k;
 		if (i != 200000) {mm << ", "; ab << ", ";}
 	}
 	mm.close(); ab.close();
 	cout << "finished plotting M" << endl;
-	}
+	}*/
 	
 
 	double small = pow(10.0, -6.0); // dont know about this?
-	double y = (MMcoeff*MM) + (mu*pow(MM, p - 1.0)) + k;
+	double y = (Mcoeff*MM) + (mu*pow(MM, p - 1.0)) + k;
 	double grad;
 	//if (info == true) {cout << "z1 " << z1 << ", y " << y << endl;}
 	double ynew;
@@ -112,7 +107,7 @@ double M(double Mstart, double z1) //this is a solution to a p-order polynomial,
 		//if (info == true) {cout << "small " << small << " grad " << grad << endl;}
 		Mnew = MM - (y/grad);
 		// if (z1 + zz < 0.0) cout << "badd" << endl;
-		ynew = (MMcoeff*Mnew) + (mu*pow(Mnew, p - 1.0)) + k;
+		ynew = (Mcoeff*Mnew) + (mu*pow(Mnew, p - 1.0)) + k;
 		if (abs(ynew) >= abs(y) && ((ynew*y) > 0.0 || abs(y) < pow(10.0, -5.0))) break;
 		y = ynew;
 		MM = Mnew;
@@ -124,7 +119,7 @@ double M(double Mstart, double z1) //this is a solution to a p-order polynomial,
 
 	return MM;
 }
-
+/*
 double melp(double z1) // (k + mutot), maybe like help but for M
 {
 	double Mstart = k;
@@ -141,40 +136,109 @@ double sigtot(double z1)
 	return -melp(z1)/z1;
 }
 // this can be zero if melp is zero, but this can be undefined if z1 = 0, and thats probably a worse problem
+*/
+
+double sigtot(double z1)
+{
+	return help(z1)*M(k, z1)/first(z1);
+}
 
 double q(double z1)
 {
 	//if (z1 == 1.0/0.0) return pow(M(k, z1), 2.0);
-	if (z1 == 0.0) cout << "z1 = 0 in q function!! :(" << endl;
-	return second(z1)*pow(X(z1)*melp(z1)/(z1*phi(z1)), 2.0);
+	//if (z1 == 0.0) cout << "z1 = 0 in q function!! :(" << endl;
+	//return second(z1)*pow(X(z1)*melp(z1)/(z1*phi(z1)), 2.0);
+	return second(z1)*pow(M(k, z1)/first(z1), 2.0);
 }
 
 double sigma(double z1)
 {
 	//if (z1 == 1.0/0.0) return 0;
-	return sqrt(2.0/(p*pow(q(z1), p - 1.0)))*sigtot(z1);
+	//return sqrt(2.0/(p*pow(q(z1), p - 1.0)))*sigtot(z1);
+	return sqrt(2.0/(second(z1)*p*pow(q(z1), p - 2.0)))*help(z1);
+}
+
+///////////////////////////////// end of equation type stuff
+
+double gradient(double z1, double small)
+{
+	double grad = second(z1 + small) - (phi(z1 + small)*(p - 1.0));
+	grad -= (second(z1 - small) - (phi(z1 - small)*(p - 1.0)));
+	return grad/(2.0*small);
+}
+
+double crit_z1() // depends on p only
+{	
+	double z1 = -10.0;
+	double small = pow(10.0, -6.0);
+	double y = second(z1) - (phi(z1)*(p - 1.0));
+	double grad;
+	if (info == true) {cout << "z1 " << z1 << ", y " << y << endl;}
+	double ynew;
+	double znew;
+	while (abs(y) > 0.0)
+	{
+		grad = gradient(z1, small);
+		if (grad == 0.0) break;
+		if (info == true) {cout << "small " << small << " grad " << grad << endl;}
+		znew = z1 - (y/grad);
+		ynew = second(znew) - (phi(znew)*(p - 1.0));
+		if (abs(ynew) >= abs(y) && ((ynew*y) > 0.0 || abs(y) < pow(10.0, -5.0))) break;
+		y = ynew;
+		z1 = znew;
+		if (info == true) {cout << "z1 " << z1 << ", y " << y << endl;}
+		if (small > pow(10.0, -10.0)) small /= 10.0;
+	}
+	
+	/*if (!(abs(sigma(z1, z2)) >= 0.0  && abs(gamma(z1, z2)) >= 0.0)) // found the wrong solution
+	{
+		small = pow(10.0, -6.0);
+		grad = gradient(z1, z2, small);
+		//z1 -= 2.0*y/grad;
+		
+		z1 *= -1.0;
+		y = (pow(param3(z1, z2), 2.0)*q(z1, z2)) - phi(z1, z2);
+		if (info == true) {cout << "z1 " << z1 << ", y " << y << endl;}
+		
+		while (abs(y) > 0.0) // assume there are only 2 roots
+		{
+			grad = gradient(z1, z2, small);
+			if (grad == 0.0) break; //{cout << "grad 0 " << g(z1, zz + small) << ", " << g(z1, zz - small) << endl;}
+			if (info == true) {cout << "small " << small << " grad " << grad << endl;}
+			znew = z1 - (y/grad);
+			// if (z1 + zz < 0.0) cout << "badd" << endl;
+			ynew = (pow(param3(znew, z2), 2.0)*q(znew, z2)) - phi(znew, z2);
+			if (abs(ynew) >= abs(y) && ((ynew*y) > 0.0 || abs(y) < pow(10.0, -5.0))) break;
+			y = ynew;
+			z1 = znew;
+			if (info == true) {cout << "z1 " << z1 << ", y " << y << endl;}
+			if (small > pow(10.0, -10.0)) small /= 10.0;
+		}
+	}*/
+	
+	return z1;	
 }
 	
 
 bool compare(ArrayXd i, ArrayXd j) {return (i(0) < j(0));}
 void fiveplot(int grid)
 {
-	//string critstr = "HOcrit_" + to_string((int)p) + "_" + to_string((int)(10*mu)) + ".txt";
-	//ofstream critfile; critfile.open(critstr);
+	string critstr = "crit_" + to_string((int)p) + "_" + to_string((int)(10*mu)) + ".txt";
+	ofstream critfile; critfile.open(critstr);
 	// so i think the range of gamma is between -1/(p-1) and 1, but I need to check this!!
-	//
+	
+	double zcrit = crit_z1();
 	
 	for (int gi = 0; gi <= 2; gi++)
 	{
-		//int gi = 2;
+		//int gi = 1;
 		
-		string filename = "measfp_" + to_string((int)p) + "_" + to_string((int)(10*mu)) + "_" + to_string(gi) + ".txt"; // changed to hist for sigma != 0
+		string filename = "measfp_" + to_string((int)p) + "_" + to_string((int)(10*mu)) + "_" + to_string(gi) + ".txt";
 		ofstream file; file.open(filename);
-
 
 		gama = ((p - 2.0)*gi*gi/(2.0*(p - 1.0))) + ((4.0 - p)*gi/(2.0*(p - 1.0))) -1.0/(p - 1.0);
 		cout << gama << endl;
-		//critfile << crit(gamma)[0]; // i think this is critical sigma
+		critfile << sigma(zcrit); // critical sigma
 
 		vector<ArrayXd> sigmat;
 		double start = -40.0;
@@ -214,26 +278,26 @@ void fiveplot(int grid)
 			if (i != sigmat.size()-1) file << ",";
 		}
 		file.close();
-		//if (gi != 2) critfile << ",";
+		if (gi != 2) critfile << ",";
 	}
-	//critfile.close();
+	critfile.close();
 }
 	
 
-
-// what about if z1 = 0 and phi = 1/2 ??
 
 
 
 int main()
 {
 	int grids = 400000; // for graphs with varying sigma
-	p = 2.0;
-	//gama;
-	mu = 0.0;
+	p = 3.0;
+	//gama = -0.1;
+	mu = -2.0;
 	k = 1.0;
 	
 	fiveplot(grids);
+	
+	info = false;
 	
 	return 0;
 }
