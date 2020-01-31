@@ -1,4 +1,4 @@
-// z1 <= z2
+
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -75,7 +75,7 @@ double M(double Mstart, double z1) //this is a solution to a p-order polynomial,
 	double Mcoeff = help(z1)*z1/first(z1); // may be better because doesnt rely on other parameters
 	double MM = Mstart; // maybe we dont need this? I think this should be set to k
 	
-	/*if (info == true)
+	if (info == true)
 	{
 	ofstream mm; mm.open("zz.txt");
 	ofstream ab; ab.open("abs.txt");
@@ -91,7 +91,7 @@ double M(double Mstart, double z1) //this is a solution to a p-order polynomial,
 	}
 	mm.close(); ab.close();
 	cout << "finished plotting M" << endl;
-	}*/
+	}
 	
 
 	double small = pow(10.0, -6.0); // dont know about this?
@@ -154,8 +154,8 @@ double q(double z1)
 double sigma(double z1)
 {
 	//if (z1 == 1.0/0.0) return 0;
-	//return sqrt(2.0/(p*pow(q(z1), p - 1.0)))*sigtot(z1);
-	return sqrt(2.0/(second(z1)*p*pow(q(z1), p - 2.0)))*help(z1);
+	return sqrt(2.0/(p*pow(q(z1), p - 1.0)))*sigtot(z1);
+	//return sqrt(2.0/(second(z1)*p*pow(q(z1), p - 2.0)))*help(z1);
 }
 
 ///////////////////////////////// end of equation type stuff
@@ -228,6 +228,9 @@ void fiveplot(int grid)
 	// so i think the range of gamma is between -1/(p-1) and 1, but I need to check this!!
 	
 	double zcrit = crit_z1();
+	cout << "crit " << zcrit << endl;
+	
+	
 	
 	for (int gi = 0; gi <= 2; gi++)
 	{
@@ -244,15 +247,105 @@ void fiveplot(int grid)
 		double start = -40.0;
 		double end = 40.0;
 		double range = end - start;
+		
+		double Mstart = k;
+		double sig_prev = -1.0; // next sigma has to be bigger than previous
 
 		for (int i = 0; i <= grid; i++)
 		{
-			double z1 = (k - mu)/(((double)i*range/(double)grid) + start); // where did i get this from?
-			if (M(k, z1) < 0.0) continue; //{cout << "bad solution 1 " << z1 << endl; continue;}
-			if (q(z1) < 0.0) continue; //{cout << "bad solution 2 " << z1 <<endl; continue;}
+			//double z1 = (k - mu)/(((double)i*range/(double)grid) + start); // where did i get this from?
+			double z1 = ((double)i*50.0/(double)grid) - 50.0;
+			//if (M(Mstart, z1) < 0.0) continue; //{cout << "bad solution 1 " << z1 << endl; continue;}
+			//if (q(z1) < 0.0) continue; //{cout << "bad solution 2 " << z1 <<endl; continue;}
 			if (sigma(z1) < 0.0) continue; //{cout << "bad solution 3 " << z1 << endl; continue;}
-			if (!(abs(sigma(z1)) >= 0.0)) continue; //{cout << "bad solution 4 " << z1 << endl; continue;}
-			if (sigma(z1) > 10.0 || sigma(z1) < 0.1) continue;
+			//if (!(abs(sigma(z1)) >= 0.0)) continue; //{cout << "bad solution 4 " << z1 << endl; continue;}
+			if (sigma(z1) > 10.0) continue;
+			if (sigma(z1) < sig_prev) break;
+			//if (sig(z1, z2) == 0.0) continue; // this is for histograms only
+
+			ArrayXd entry = ArrayXd::Zero(6); // sigma, z1, phi, M, q, help
+			entry(0) = sigma(z1);
+			entry(1) = z1;
+			entry(2) = phi(z1);
+			entry(3) = M(Mstart, z1);
+			entry(4) = q(z1);
+			entry(5) = help(z1);
+			
+			Mstart = entry(3);
+			sig_prev = entry(0);
+			
+			sigmat.push_back(entry);
+			cout << "i " << i << ", z1 " << z1 << ", phi " << phi(z1) << ", M " << entry(3) << ", sig " << sigma(z1) << ", q " << q(z1) << endl;
+			//cin >> carryon;
+			//info = true;
+		}
+		sort(sigmat.begin(), sigmat.end(), compare);
+
+		cout << gi << " " << sigmat.size() << " sorted!" << endl;
+	
+		for (int i = 0; i < sigmat.size(); i++)
+		{
+			file << sigmat[i].format(cc);
+			//cout << sigmat[i].format(c) << endl;
+			if (i != sigmat.size()-1) file << ",";
+		}
+		file.close();
+		if (gi != 2) critfile << ",";
+	}
+	critfile.close();
+}
+
+void phase(int grid)
+{
+	string filename = "phline_" + to_string((int)p) + "_" + to_string((int)(10*mu)) + ".txt";
+	ofstream file; file.open(filename);
+	double zcrit = crit_z1();
+	for (int ig = 0; ig <= grid; ig++)
+	{
+		double gi = (double)ig/(double)grid;
+		gama = (2.0*(p - 2.0)*gi*gi/(p - 1.0)) + ((4.0 - p)*gi/(p - 1.0)) - 1.0/(p - 1.0);
+		file << gama << "," << sigma(zcrit);
+		if (ig != grid) file << ",";
+	}
+	file.close();
+}
+
+/*
+// this one is for testing
+bool compare(ArrayXd i, ArrayXd j) {return (i(1) < j(1));}
+void fiveplot(int grid)
+{
+	string critstr = "Tcrit_" + to_string((int)p) + "_" + to_string((int)(10*mu)) + ".txt";
+	ofstream critfile; critfile.open(critstr);
+	// so i think the range of gamma is between -1/(p-1) and 1, but I need to check this!!
+	
+	double zcrit = crit_z1();
+	cout << "crit " << zcrit << endl;
+	
+	//for (int gi = 0; gi <= 2; gi++)
+	//{
+		int gi = 1;
+		
+		string filename = "Tmeasfp_" + to_string((int)p) + "_" + to_string((int)(10*mu)) + "_" + to_string(gi) + ".txt";
+		ofstream file; file.open(filename);
+
+		gama = ((p - 2.0)*gi*gi/(2.0*(p - 1.0))) + ((4.0 - p)*gi/(2.0*(p - 1.0))) -1.0/(p - 1.0);
+		cout << gama << endl;
+		critfile << sigma(zcrit); // critical sigma
+
+		vector<ArrayXd> sigmat;
+		double start = -40.0;
+		double end = 40.0;
+		double range = end - start;
+
+		for (int i = 0; i <= grid; i++)
+		{
+			double z1 = 20.0*(double)i/(double)grid - 10.0; //(k - mu)/(((double)i*range/(double)grid) + start); // where did i get this from?
+			//if (M(k, z1) < 0.0) continue; //{cout << "bad solution 1 " << z1 << endl; continue;}
+			//if (q(z1) < 0.0) continue; //{cout << "bad solution 2 " << z1 <<endl; continue;}
+			//if (sigma(z1) < 0.0) continue; //{cout << "bad solution 3 " << z1 << endl; continue;}
+			//if (!(abs(sigma(z1)) >= 0.0)) continue; //{cout << "bad solution 4 " << z1 << endl; continue;}
+			//if (sigma(z1) > 10.0 || sigma(z1) < 0.1) continue;
 			//if (sig(z1, z2) == 0.0) continue; // this is for histograms only
 
 			ArrayXd entry = ArrayXd::Zero(6); // sigma, z1, phi, M, q, help
@@ -279,23 +372,22 @@ void fiveplot(int grid)
 		}
 		file.close();
 		if (gi != 2) critfile << ",";
-	}
+	//}
 	critfile.close();
 }
-	
-
-
-
+*/
 
 int main()
 {
-	int grids = 400000; // for graphs with varying sigma
-	p = 3.0;
+	int grids = 400000; //400000; // for graphs with varying sigma
+	p = 2.0;
 	//gama = -0.1;
 	mu = -2.0;
 	k = 1.0;
 	
-	fiveplot(grids);
+	//fiveplot(grids);
+	
+	phase(grids);
 	
 	info = false;
 	
@@ -304,23 +396,24 @@ int main()
 /*
 int main()
 {
-	p = 2.0;
+	info = true;
+	p = 3.0;
 	mu = 0.0;
 	k = 1.0;
-	gama = 1.0;
-	double z1 = -0.745379;
+	gama = 0.0;
+	double z1 = -0.83;
 	cout << phi(z1) << endl;
 	cout << second(z1) << endl;
 	cout << X(z1) << endl;
 	cout << help(z1) << endl;
 	cout << first(z1) << endl;
-	cout << Mcoeff(z1) << endl;
 	cout << M(k, z1) << endl;
+	cout << q(z1) << endl;
+	cout << sigma(z1) << endl;
 	
 	return 0;
 }
 */
-	
 
 
 
