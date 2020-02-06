@@ -51,6 +51,13 @@ auto Tmat(const Eigen::Tensor<Scalar, 2> &tensor,const sizeType rows, const size
     return Eigen::Map<const MatrixType<Scalar>> (tensor.data(), rows, cols);
 }
 
+template<typename Scalar, typename... Dims>
+auto Maten(const MatrixType<Scalar> &matrix, Dims... dims)
+{
+    constexpr int rank = sizeof... (Dims);
+    return Eigen::TensorMap<Eigen::Tensor<const Scalar, rank>>(matrix.data(), {dims...});
+}
+
 MatrixXd cholesky(int p)
 {
 	MatrixXd low = MatrixXd::Zero(p, p);
@@ -59,17 +66,18 @@ MatrixXd cholesky(int p)
 	{
 		for (int j = 0; j <= i; j++)
 		{
-			int sum = 0;
+			double sum = 0.0;
 			if (j == i)
 			{
 				for (int k = 0; k < j; k++) sum += pow(low(j, k), 2.0);
 				low(j, j) = sqrt(1 - sum);
+				//cout << "(" << i << "," << j << ") " << low(i,j) << endl;
 			}
 			else
 			{
 				for (int k = 0; k < j; k++) sum += (low(i, k)*low(j,k));
 				low(i, j) = (gama(p-2) - sum)/low(j, j);
-				 
+				//cout << "(" << i << "," << j << ") " << low(i,j) << endl;
 			}
 		}
 	}
@@ -96,6 +104,26 @@ Tensor<double, 2> order2()
 	}
 	return A;
 }
+/*
+Tensor<double, 2> order2() // do it like functionals
+{
+	MatrixXd AA(N,N);
+	AA(0,0) = 0.0;
+	for (int i = 1; i < N; i++)
+	{
+		AA(i,i) = 0.0;
+		for (int j = 0; j < i; j++)
+		{
+			double z1 = distributionn(twist);
+			double z2 = distributionn(twist);
+			double y1 = (gama(0)*z1) + (sqrt(1.0-(gama(0)*gama(0)))*z2);
+			AA(i,j) = (mu(0)/N) + ((sigma(0)*z1)/sqrt(N));
+			AA(j,i) = (mu(0)/N) + ((sigma(0)*y1)/sqrt(N));
+		}
+	}
+	return Maten(AA, N, N);
+}
+*/	
 /*
 Tensor<double, 3> order3()
 {
@@ -229,18 +257,18 @@ class simulation
 		uniqueF = true;
 		for (int t = 2; t < (0.01*T)+2; t++)
 		{
-			if (((abs(trajx[t] - trajy[t]) < 0.0001) || ((abs(trajx[t] - trajy[t]/trajx[t-1] - trajy[t-1])) < 1.0)).minCoeff() == 0) {cout << "unique " << t << endl; unique = false; break;}
+			if (((abs(trajx[t] - trajy[t]) < 0.0001) || ((abs(trajx[t] - trajy[t])/(trajx[t-1] - trajy[t-1])) < 1.0)).minCoeff() == 0) {cout << "unique " << t << endl; unique = false; break;}
 		}
 		for (int t = 2; t < (0.01*T)+2; t++)
 		{
-			if (((abs(trajxF[t] - trajyF[t]) < 0.0001) || ((abs(trajxF[t] - trajyF[t]/trajxF[t-1] - trajyF[t-1])) < 1.0)).minCoeff() == 0) {cout << "uniqueF " << t << endl; uniqueF = false; break;}
+			if (((abs(trajxF[t] - trajyF[t]) < 0.0001) || ((abs(trajxF[t] - trajyF[t])/(trajxF[t-1] - trajyF[t-1])) < 1.0)).minCoeff() == 0) {cout << "uniqueF " << t << endl; uniqueF = false; break;}
 		}
 	}
 	void run()
 	{
 		for (int t = 0; t < T; t++)
 		{	
-			cout << t << endl;
+			//cout << t << endl;
 
 			// should comment out a lot of this stuff when isolating orders
 
@@ -327,8 +355,8 @@ class simulation
 
 			/////////////////////////////////////////////
 				
-			if (Tarr(x, N).maxCoeff() > pow(10.0, 5.0) || Tarr(y, N).maxCoeff() > pow(10.0, 5.0)) {diverge = true;}// break;}
-			if (xF.maxCoeff() > pow(10.0, 5.0) || yF.maxCoeff() > pow(10.0, 5.0)) {divergeF = true;}// break;}
+			if (Tarr(x, N).maxCoeff() > pow(10.0, 5.0) || Tarr(y, N).maxCoeff() > pow(10.0, 5.0)) {diverge = true; cout << "diverged at " << t << endl;}// break;}
+			if (xF.maxCoeff() > pow(10.0, 5.0) || yF.maxCoeff() > pow(10.0, 5.0)) {divergeF = true; cout << "divergedF at " << t << endl;}// break;}
 	
 			// store data //////////////////
 
@@ -372,6 +400,7 @@ void plot(int plots)
 	{
 		for (int t = 0; t < sim.trajx.size(); t++)
 		{
+			//cout << "con " << t << endl;
 			datax << sim.trajx[t](i);
 			datay << sim.trajy[t](i);
 			//cout << sim.trajx[t](i);
@@ -380,6 +409,7 @@ void plot(int plots)
 		}
 		for (int t = 0; t < sim.trajxF.size(); t++)
 		{
+			//cout << "F " << t << endl;
 			dataxF << sim.trajxF[t](i);
 			datayF << sim.trajyF[t](i);
 			if (i != plots-1 || t != sim.trajxF.size()-1) {dataxF << ","; datayF << ",";}
@@ -399,7 +429,7 @@ int main(int argc, char** argv)
 	p = 2;
 	N = 200;
 	Nd = (double)N;
-	T = 50000; //200000;
+	T = 200000; //200000;
 	dt = 0.001;
 	//mu(p-2) = -2.0;
 	int plots = 200;
@@ -412,6 +442,8 @@ int main(int argc, char** argv)
 	sigma(p-2) = pow(10.0, po);
 
 	plot(plots);
+	
+	//cout << cholesky(2) << endl;
 
 
 
