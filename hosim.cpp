@@ -1,8 +1,3 @@
-// lotka-volterra dynamics with eigen array class, RK4 instead of euler
-// now updating on condor, definitly get that instead!!!!
-
-// so i think traj needs to be stored as a vector of arrays as you need to do cirtain manipulations to check fixed and unqiue you cant do with tensors
-// but to check diverge i think you need tensor.abs() ?
 
 #include <iostream>
 #include <sstream>
@@ -73,7 +68,7 @@ MatrixXd cholesky(int p)
 	{
 		for (int j = 0; j <= i; j++)
 		{
-			int sum = 0;
+			double sum = 0.0;
 			if (j == i)
 			{
 				for (int k = 0; k < j; k++) sum += pow(low(j, k), 2.0);
@@ -90,10 +85,6 @@ MatrixXd cholesky(int p)
 
 	return low;
 }
-
-
-
-
 
 
 Tensor<double, 2> order2()
@@ -114,6 +105,7 @@ Tensor<double, 2> order2()
 	}
 	return A;
 }
+
 /*
 Tensor<double, 3> order3()
 {
@@ -137,6 +129,8 @@ Tensor<double, 3> order3()
 	}
 	return A;
 }
+*/
+/*
 Tensor<double, 4> order4()
 {
 	cout << "aac" << endl;
@@ -211,7 +205,8 @@ Tensor<double, 5> order5()
 class simulation
 {
 	public:
-	Tensor<double, 2> A; //Tensor<double, 3> B; Tensor<double, 4> C; Tensor<double, 5> D;
+	Tensor<double, 2> A;
+	//Tensor<double, 3> B; //Tensor<double, 4> C; Tensor<double, 5> D;
 	Tensor<double, 1> x; Tensor<double, 1> y; Tensor<double, 1> k;
 	bool fixed; bool unique; bool diverge;
 	vector<ArrayXd> trajx; vector<ArrayXd> trajy; //
@@ -220,8 +215,9 @@ class simulation
 		diverge = false;
 		x = Tensor<double, 1>(N); y = Tensor<double, 1>(N); k = Tensor<double, 1>(N);
 		for (int i = 0; i < N; i++) {x(i) = distributionr(twist); y(i) = distributionr(twist); k(i) = 1.0;}
-		trajx.push_back(Tarr(x, N)); trajy.push_back(Tarr(y, N)); //
-		A = order2(); //B = order3(); C = order4(); D = order5();
+		//trajx.push_back(Tarr(x, N)); trajy.push_back(Tarr(y, N)); //
+		A = order2();
+		//B = order3(); //C = order4(); D = order5();
 		//B.setZero(); C.setZero(); D.setZero();
 	}
 	~simulation() {}
@@ -236,7 +232,7 @@ class simulation
 		unique = true;
 		for (int t = 2; t < (0.01*T)+2; t++)
 		{
-			if (((abs(trajx[t] - trajy[t]) < 0.0001) || ((abs(trajx[t] - trajy[t])/abs(trajx[t-1] - trajy[t-1])) < 1.0)).minCoeff() == 0) {unique = false; break;}
+			if (((abs(trajx[t] - trajy[t]) < 0.0001) || (abs((trajx[t] - trajy[t])/(trajx[t-1] - trajy[t-1])) < 1.0)).minCoeff() == 0) {unique = false; break;}
 		}
 	}
 	void run()
@@ -280,7 +276,7 @@ class simulation
 				// + D.contract(x + k3, d10).contract(x + k3, d10).contract(x + k3, d10).contract(x + k3, d10)
 				);
 	
-				x += (k1 + (2.0*k2) + (2.0*k3) + k4)/6.0;
+				Tensor<double, 1> xtemp = x + (k1 + (2.0*k2) + (2.0*k3) + k4)/6.0;
 	
 				
 				// for y /////////////
@@ -313,20 +309,27 @@ class simulation
 				//+ D.contract(y + k3, d10).contract(y + k3, d10).contract(y + k3, d10).contract(y + k3, d10)
 				);
 
-				y += (k1 + (2.0*k2) + (2.0*k3) + k4)/6.0;
+				Tensor<double, 1> ytemp = y + (k1 + (2.0*k2) + (2.0*k3) + k4)/6.0;
+
+				//////////////////////////////////////////////
 				
-				if (Tarr(x, N).maxCoeff() > pow(10.0, 20.0) || Tarr(y, N).maxCoeff() > pow(10.0, 20.0)) diverge = true;
+				
+				
+				if (Tarr(xtemp, N).maxCoeff() > pow(10.0, 10.0) || Tarr(ytemp, N).maxCoeff() > pow(10.0, 20.0) || Tarr(xtemp, N).minCoeff() < 0.0 || Tarr(ytemp, N).minCoeff() < 0.0) diverge = true;
+				else {x = xtemp; y = ytemp;}
 				
 			}
 	
 			// store data //////////////////
 
 			//trajx.push_back(Tarr(x, N)); trajy.push_back(Tarr(y, N)); //
+			
+			//cout << t << ", " << Tarr(x, N).maxCoeff() << ", " << Tarr(x, N).minCoeff() << endl;
 
 			if (t >= (0.99*T)-2) {trajx.push_back(Tarr(x, N)); trajy.push_back(Tarr(y, N));} //
 
 		}
-		check();
+		//if (diverge == false) check();
 	}
 	ArrayXd measures()
 	{
@@ -342,10 +345,12 @@ class simulation
 			sum2 += trajx[t]*trajx[t];
 
 			double M = trajx[t].mean();
+			//if (t == 0) cout << trajx[t] << endl;
 			double q = (trajx[t]*trajx[t]).mean();
 			for (int i = 0; i < N; i++) if (trajx[t](i) > 0.0001) m(0) ++;
 
 			m(1) += M;
+			//cout << "m1 " << m(1) << endl;
 			m(2) += q;
 			m(3) += M*M/q;
 			m(4) += (((trajx[t] - trajy[t])*(trajx[t] - trajy[t])).mean());
@@ -371,7 +376,7 @@ class simulation
 };
 
 
-void fiveplot(int grid, int runs) // for a single p with mu = 0
+void fiveplot(int grid, int runs) // for a single p
 {
 	string filename = "homeas_" + to_string(p) + "_" + to_string((int)(10*mu(p-2))) + ".txt"; //
 	ofstream file; file.open(filename);
@@ -380,11 +385,10 @@ void fiveplot(int grid, int runs) // for a single p with mu = 0
 		gama(p-2) = ((p - 2.0)*g*g/(2.0*(p - 1.0))) + ((4.0 - p)*g/(2.0*(p - 1.0))) -1.0/(p - 1.0);
 		for (int s = 0; s <= grid; s++)
 		{
-			//int s = 6;
+			//int s = 7;
 		
 			double po = (2.0*s/(double)grid) - 1.0;
 			sigma(p-2) = pow(10.0, po);
-
 			ArrayXd meas = ArrayXd::Zero(6);
 		
 			for (int r = 0; r < runs; r++)
@@ -401,7 +405,51 @@ void fiveplot(int grid, int runs) // for a single p with mu = 0
 		if (g != 2) file << ",";
 	}
 }
+
+int main(int argc, char** argv) // for condor
+{
+	gama = ArrayXd::Zero(4);
+	mu = ArrayXd::Zero(4);
+	sigma = ArrayXd::Zero(4);
+	p = 2;
+	N = 200; //200;
+	Nd = (double)N;
+	T = 200000;
+	dt = 0.001;
+	//int grid = 20; // for fiveplots
+	int runs = 20;
+	mu(p-2) = -2.0;
+	
+	
+	int v1 = atoi(argv[1]);
+	int v2 = atoi(argv[2]);
+
+
+	string filename = "five2m0_" + to_string(v1) + "_" + to_string(v2) + ".txt"; // letter represents order
+	ofstream file; file.open(filename);
+
+	//file << v1 << ", " << v2 << endl;
+
+	gama(p-2) = ((p - 2.0)*(double)v1*(double)v1/(2.0*(p - 1.0))) + ((4.0 - p)*(double)v1/(2.0*(p - 1.0))) -1.0/(p - 1.0);
+	double po = ((double)v2/10.0) - 1.0;
+	sigma(p-2) = pow(10.0, po);
+	
+	ArrayXd meas = ArrayXd::Zero(6);
 		
+	for (int r = 0; r < runs; r++)
+	{
+		//cout << "g " << g << ", s " << s << ", r " << r << endl;
+		simulation sim;
+		sim.run();
+		meas += sim.measures();
+	}
+	meas /= (double)runs;
+	file << meas.format(c);
+
+	file.close();	
+	
+	return 0;
+}
 				
 
 
@@ -462,43 +510,60 @@ void plot(double sigma, double gamma, int plots)
 			
 
 
-
+/*
 int main()	
 {
 	gama = ArrayXd::Zero(4);
 	mu = ArrayXd::Zero(4);
 	sigma = ArrayXd::Zero(4);
 	p = 2;
-	N = 50; //200;
+	N = 200; //200;
 	Nd = (double)N;
 	T = 200000;
 	dt = 0.001;
 	int grid = 10; // for fiveplots
 	int runs = 5;
 	int plots = 20;
+	mu(p-2) = -2.0;
 	
-	// everything for p above 2 commented out
+	// everything for p != 2 commented out
 	
 
 	// traj matrix 1%
 
-	/*simulation sim(pow(10.0, 1.0), 0.0);
-	sim.run();
-	cout << sim.fixed << endl;
-	cout << sim.unique << endl;*/
 
 	
 	//histogram(runs);
 
-	fiveplot(grid, runs);
+	//fiveplot(grid, runs);
 
 	//plot(pow(10.0, 1.0), 0.0, 20);
+	
+	
+	
+	int s = 7;
+		
+	double po = (2.0*s/(double)grid) - 1.0;
+	sigma(p-2) = pow(10.0, po);
+	ArrayXd meas = ArrayXd::Zero(6);
+	
+	//for (int r = 0; r < runs; r++)
+	//{
+		//cout << "r " << r << endl;
+		simulation sim;
+		sim.run();
+		//cout << sim.measures() << endl;
+		if (sim.diverge == false) {cout << "fix " << sim.fixed << endl; cout << "un " << sim.unique << endl;}
+		//meas += sim.measures();
+	//}
+	//meas /= (double)runs;
+	//cout << meas.format(c) << endl;
 
 
 
 	return 0;
 }
-
+*/
 
 
 
