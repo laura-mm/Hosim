@@ -139,14 +139,15 @@ Tensor<double, 3> order3()
 				VectorXd z(3);
 				for (int zi = 0; zi < 3; zi++) z(zi) = distributionn(twist);
 				MatrixXd list = cho*z;
-				A(i,j,k) = (mu(1)/Nd) + ((sigma(1)*list(0))/sqrt(Nd));
-				A(j,k,i) = (mu(1)/Nd) + ((sigma(1)*list(1))/sqrt(Nd));
-				A(k,i,j) = (mu(1)/Nd) + ((sigma(1)*list(2))/sqrt(Nd));
+				A(i,j,k) = (2.0*mu(1)/pow(Nd, 2.0)) + (sqrt(3.0)*sigma(1)*list(0)/Nd);
+				A(j,k,i) = (2.0*mu(1)/pow(Nd, 2.0)) + (sqrt(3.0)*sigma(1)*list(1)/Nd);
+				A(k,i,j) = (2.0*mu(1)/pow(Nd, 2.0)) + (sqrt(3.0)*sigma(1)*list(2)/Nd);
 			}
 		}
 	}
 	return A;
 }
+
 Tensor<double, 4> order4()
 {
 	cout << "aac" << endl;
@@ -162,20 +163,14 @@ Tensor<double, 4> order4()
 			{
 				for (int l = 0; l < k; l++)
 				{
-					cout << "ac" << endl;
 					MatrixXd cho = cholesky(4);
-					cout << "ad" << endl;
 					VectorXd z(4);
-					cout << "ae" << endl;
 					for (int zi = 0; zi < 4; zi++) z(zi) = distributionn(twist);
-					cout << "af" << endl;
 					MatrixXd list = cho*z;
-					cout << "ag" << endl;
-					A(i,j,k,l) = (mu(2)/Nd) + ((sigma(2)*list(0))/sqrt(Nd));
-					cout << "ah" << endl;
-					A(j,k,l,i) = (mu(2)/Nd) + ((sigma(2)*list(1))/sqrt(Nd));
-					A(k,l,i,j) = (mu(2)/Nd) + ((sigma(2)*list(2))/sqrt(Nd));
-					A(l,i,j,k) = (mu(2)/Nd) + ((sigma(2)*list(3))/sqrt(Nd));
+					A(i,j,k,l) = (6.0*mu(2)/pow(Nd, 3.0)) + (sqrt(12.0/pow(Nd, 3.0))*sigma(2)*list(0));
+					A(j,k,l,i) = (6.0*mu(2)/pow(Nd, 3.0)) + (sqrt(12.0/pow(Nd, 3.0))*sigma(2)*list(1));
+					A(k,l,i,j) = (6.0*mu(2)/pow(Nd, 3.0)) + (sqrt(12.0/pow(Nd, 3.0))*sigma(2)*list(2));
+					A(l,i,j,k) = (6.0*mu(2)/pow(Nd, 3.0)) + (sqrt(12.0/pow(Nd, 3.0))*sigma(2)*list(3));
 				}
 			}
 		}
@@ -200,11 +195,11 @@ Tensor<double, 5> order5()
 						VectorXd z(5);
 						for (int zi = 0; zi < 5; zi++) z(zi) = distributionn(twist);
 						MatrixXd list = cho*z;
-						A(i,j,k,l,m) = (mu(3)/Nd) + ((sigma(3)*list(0))/sqrt(Nd));
-						A(j,k,l,m,i) = (mu(3)/Nd) + ((sigma(3)*list(1))/sqrt(Nd));
-						A(k,l,m,i,j) = (mu(3)/Nd) + ((sigma(3)*list(2))/sqrt(Nd));
-						A(l,m,i,j,k) = (mu(3)/Nd) + ((sigma(3)*list(3))/sqrt(Nd));
-						A(m,i,j,k,l) = (mu(3)/Nd) + ((sigma(3)*list(4))/sqrt(Nd));
+						A(i,j,k,l,m) = (24.0*mu(3)/pow(Nd, 4.0)) + (sqrt(60.0)*sigma(3)*list(0)/pow(Nd, 2.0));
+						A(j,k,l,m,i) = (24.0*mu(3)/pow(Nd, 4.0)) + (sqrt(60.0)*sigma(3)*list(1)/pow(Nd, 2.0));
+						A(k,l,m,i,j) = (24.0*mu(3)/pow(Nd, 4.0)) + (sqrt(60.0)*sigma(3)*list(2)/pow(Nd, 2.0));
+						A(l,m,i,j,k) = (24.0*mu(3)/pow(Nd, 4.0)) + (sqrt(60.0)*sigma(3)*list(3)/pow(Nd, 2.0));
+						A(m,i,j,k,l) = (24.0*mu(3)/pow(Nd, 4.0)) + (sqrt(60.0)*sigma(3)*list(4)/pow(Nd, 2.0));
 					}
 				}
 			}
