@@ -55,7 +55,14 @@ g = np.linspace(-1, 1, grid + 1)
 x = np.linspace(-1, 3, grid + 1)
 s = np.power(10, x)
 
-#la5 = np.loadtxt('phline_5_0.txt', delimiter=",")
+p2m0 = np.loadtxt('phline_2_0.txt', delimiter=",")
+p2m0 = p2m0.reshape(int(len(p2m0)/2), 2)
+p2m0 = np.transpose(p2m0)
+
+p2m2 = np.loadtxt('phline_2_-20.txt', delimiter=",")
+p2m2 = p2m2.reshape(int(len(p2m2)/2), 2)
+p2m2 = np.transpose(p2m2)
+
 #la2 = np.loadtxt('phline_20_0.txt', delimiter=",")
 
 #gl = np.linspace((2.0/gridl) - 1, 1, gridl)
@@ -68,33 +75,38 @@ s = np.power(10, x)
 plt.subplots(1, 2, figsize=(12,6))
 
 plt.subplot(1, 2, 1) # mu 0
-A0 = np.loadtxt('hoA0_lt.txt', delimiter=",")
+A0 = np.loadtxt('ho20_lt.txt', delimiter=",")
 A0 = A0.reshape(grid + 1, grid + 1, 3)
 A0 = np.transpose(A0, (1, 0, 2))
-plt.imshow(A0, extent=[-1, 1, 0.1, 1000], origin = 'lower')
+#plt.imshow(A0, extent=[-1, 1, 0.1, 1000], origin = 'lower')
+plt.imshow(A0, extent=[-1, 1, 1, 2], origin = 'lower')
 plt.yscale('log')
-#plt.semilogy(gl, l1, 'k')
+#plt.semilogy(p2m0[0], p2m0[1], 'k')
 #plt.xlabel(r'$\gamma$')
 #plt.ylabel(r'$\sigma$')
+#plt.ylim([0.1, 1000])
 plt.text(0.8, 500, lett[0], fontsize=20)
 #plt.title(r'$a = 2$')
 
-"""
-plt.subplot(1, 2, 2) # p5
-p5 = np.loadtxt('p5.txt', delimiter=",")
-p5 = p5.reshape(grid + 1, grid + 1, 3)
-p5 = np.transpose(p5, (1, 0, 2))
-plt.imshow(p5, extent=[-1, 1, 0.1, 1000], origin = 'lower')
+
+
+plt.subplot(1, 2, 2) # mu -2
+A2 = np.loadtxt('ho2-_lt.txt', delimiter=",")
+A2 = A2.reshape(grid + 1, grid + 1, 3)
+A2 = np.transpose(A2, (1, 0, 2))
+plt.imshow(A2, extent=[-1, 1, 0.1, 1000], origin = 'lower')
+#plt.imshow(A2, extent=[-1, 1, 1, 1000], origin = 'lower')
 plt.yscale('log')
-plt.semilogy(gl, la5, 'k')
-plt.xlabel(r'$\gamma$')
+plt.semilogy(p2m2[0], p2m2[1], 'k')
+#plt.plot(p2m2[0], np.log10(p2m2[1]), 'k')
+#plt.xlabel(r'$\gamma$')
 plt.ylim([0.1, 1000])
 plt.text(0.8, 500, lett[1], fontsize=20)
-plt.title(r'$a = 0.5$')
-"""
+#plt.title(r'$a = 0.5$')
+
 
 plt.subplots_adjust(left = 0.07, right = 0.98, wspace = 0.17)
-plt.savefig('hoA.pdf')
+plt.savefig('ho2.pdf')
 
 
 
