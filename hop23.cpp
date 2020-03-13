@@ -99,7 +99,7 @@ double M(double z1, double help) //this is a solution to a p-order polynomial, s
 	while (abs(y) > 0.0)
 	{
 		grad = Mgrad(z1, help, MM, small);
-		if (grad == 0.0) break; //{cout << "grad 0 " << g(z1, zz + small) << ", " << g(z1, zz - small) << endl;}
+		if (grad == 0.0) {cout << "grad 0 " << endl; return 1.0/0.0;}
 		//if (info == true) {cout << "small " << small << " grad " << grad << endl;}
 		Mnew = MM - (y/grad);
 		// if (z1 + zz < 0.0) cout << "badd" << endl;
@@ -169,25 +169,40 @@ double sig2_crit(double z1, double help) // this should output the critical valu
 	double small = pow(10.0, -6.0); // dont know about this?
 	double y = pow(sig2, 2.0) + (3.0*q(z1, help)*pow(sig3(z1, help, sig2), 2.0)) - (pow(help, 2.0)/phi(z1));
 	double grad;
-	//if (info == true) {cout << "sig2 " << sig2 << ", y " << y << endl;}
+	//if (info == true) 
+	{cout << "sig2 " << sig2 << ", y " << y << endl;}
 	double ynew;
 	double sig2new;
 	while (abs(y) > 0.0)
 	{
 		grad = sgrad(z1, help, sig2, small);
-		if (grad == 0.0) break; //{cout << "grad 0 " << g(z1, zz + small) << ", " << g(z1, zz - small) << endl;}
-		//if (info == true) {cout << "small " << small << " grad " << grad << endl;}
+		cout << "a" << endl;
+		if (grad == 0.0) {cout << "grad 0 " << pow((sig2 + small), 2.0) + (3.0*q(z1, help)*pow(sig3(z1, help, sig2 + small), 2.0)) << ", " << pow((sig2 - small), 2.0) + (3.0*q(z1, help)*pow(sig3(z1, help, sig2 - small), 2.0)) << endl; break;}
+		//if (info == true)
+		{cout << "small " << small << " grad " << grad << endl;}
+		cout << "b" << endl;
 		sig2new = sig2 - (y/grad);
-		if (sig2new > sigtot(z1, help)/sqrt(q(z1, help))) {sig2new = sigtot(z1, help)/sqrt(q(z1, help)); cout << "upper bound" << endl;}
+		cout << "sig2new " << sig2new << endl;
+		cout << "c" << endl;
+		if (sig2new > sigtot(z1, help)/sqrt(q(z1, help))) {sig2new = sigtot(z1, help)/sqrt(q(z1, help)) - small; cout << "upper bound" << endl;}
+		cout << "d" << endl;
 		if (sig2new < 0.0) {sig2new = 0.0; cout << "lower bound" << endl;}
+		cout << "e" << endl;
 		ynew = pow(sig2new, 2.0) + (3.0*q(z1, help)*pow(sig3(z1, help, sig2new), 2.0)) - (pow(help, 2.0)/phi(z1));
-		if (abs(ynew) >= abs(y) && ((ynew*y) > 0.0 || abs(y) < pow(10.0, -5.0))) break;
+		if (sig2new == 0.0 && ynew < 0.0) return -1.0;
+		cout << "f" << endl;
+		cout << "ynew " << ynew << endl;
+		cout << "g" << endl;
+		if (abs(ynew) >= abs(y) && ((ynew*y) > 0.0 || abs(y) < pow(10.0, -5.0))) {cout << "broke" << endl; break;}
+		cout << "h" << endl;
 		y = ynew;
+		cout << "i" << endl;
 		sig2 = sig2new;
+		cout << "j" << endl;
 		//if (info == true) {cout << "sig2 " << sig2 << ", y " << y << endl;}
 		if (small > pow(10.0, -10.0)) small /= 10.0;
 	}
-
+	cout << "k" << endl;
 	return sig2;
 }
 
@@ -202,6 +217,7 @@ void cycle(int grid1, int grid2)
 	for (int i = 0; i <= grid1; i++)
 	{
 		double z1 = ((double)i/(double)grid1) - 1.0;
+		//double z1 = -0.2;
 		
 		cout << "z1 " << z1 << endl;
 		cout << "phi " << phi(z1) << endl;
@@ -216,10 +232,19 @@ void cycle(int grid1, int grid2)
 		
 		ofstream file; file.open("testing.txt");
 		
-		sigma(0) = sig2_crit(z1, help);
-		sigma(1) = sqrt(2.0*(pow(sigtot(z1, help), 2.0) - (q(z1, help)*pow(sigma(0), 2.0)))/(3.0*pow(q(z1, help), 2.0)));
+		//sigma(0) = sig2_crit(z1, help);
+		//sigma(1) = sqrt(2.0*(pow(sigtot(z1, help), 2.0) - (q(z1, help)*pow(sigma(0), 2.0)))/(3.0*pow(q(z1, help), 2.0)));
 		
-		cout << sig2_crit(z1, help) << endl;
+		//cout << sig2_crit(z1, help) << endl;
+		double sig2crit;
+		if (phi(z1) == second(z1)) 
+		
+		
+		sig2crit = sig2_crit(z1, help);
+		bool solution = (sig2crit >= 0.0);
+		if (solution) cout << sig2crit << endl;
+		else cout << "no solution" << endl;
+		
 		
 		// now what are the gammas?
 		
@@ -252,7 +277,10 @@ int main()
 	//mu(0) = -2.0;
 	//mu(1) = -2.0;
 	
-	cycle(10, 10000);
+	//cycle(10, 10000);
+	
+	info = true;
+	cout << M(-0.0000001, 1.0) << endl;
 	
 	return 0;
 }

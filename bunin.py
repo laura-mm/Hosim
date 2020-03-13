@@ -27,4 +27,16 @@ plt.subplots_adjust(bottom = 0.17, top = 0.93)
 
 
 plt.savefig('bunin.pdf')
+
+plt.figure(2)
+z = np.loadtxt("bunin3_0.txt", delimiter = ",")
+z = z.reshape(len(z)/3, 3)
+z = np.transpose(z)
+
+plt.plot(z[0], z[1])
+plt.plot(z[0], z[2])
+plt.axhline(y = 0, linestyle = '--', color = 'r')
+plt.ylim([0, 10])
+plt.xlim([-5, 3])
+
 plt.show()

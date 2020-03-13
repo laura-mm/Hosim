@@ -15,8 +15,8 @@ using namespace std;
 int main()
 {
 	ofstream heat;
-	heat.open("ltran.txt");
-	ifstream file("l.txt");
+	heat.open("ho2-_lt.txt");
+	ifstream file("ho2-.txt");
 	
 	for (int i = 0; i <= 10200; i ++)
 	{
