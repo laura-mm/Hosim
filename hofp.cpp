@@ -166,6 +166,11 @@ double mud2(double z1) // for p = 2 this is the value of mu where we find diverg
 	return -z1*help(z1)/first(z1);
 }
 
+double mud3(double z1) // for p = 3, value of mu where no solutions for M, no sure if divergence
+{
+	return pow(z1*help(z1)/first(z1), 2.0)/(4.0*k);
+}
+
 ///////////////////////////////// end of equation type stuff
 
 
@@ -340,7 +345,7 @@ void phase(int grid) // for gamma against sigma
 	file.close();
 }
 
-void bunin(int grid) // for a phase diagram like bunin
+void bunin2(int grid) // for a phase diagram like bunin
 {
 	ofstream file; file.open("bunin2_" + to_string((int)(10.0*gama)) + ".txt");
 	
@@ -368,6 +373,24 @@ void bunin(int grid) // for a phase diagram like bunin
 	}*/
 	file.close();
 }
+
+void bunin3(int grid)
+{
+	ofstream file; file.open("bunin3_" + to_string((int)(10.0*gama)) + ".txt");
+	double sig_prev = -1.0;
+	for (int i = 0; i <= grid; i++)
+	{
+		double z1 = 100.0*(double)i/(double)grid - 50.0;
+		mu = mud3(z1);
+		//if (sigma(z1) < sig_prev) break; // this one!
+		sig_prev = sigma(z1);
+		if (i != 0) file << ",";
+		file << mu << "," << sigma(crit_z1()) << "," << sigma(z1);
+		cout << z1 << ", " << mu << "," << sigma(crit_z1()) << "," << sigma(z1) << endl;
+	}
+	file.close();
+}
+		
 
 /*
 // this one is for testing
@@ -444,8 +467,8 @@ void testing(int grids)
 	for (int i = 0; i <= grids; i ++)
 	{
 		double z1 = (5.0*double(i)/(double)grids) - 4.0;
-		file << z1 << "," << first(z1) << "," << mu - (z1*help(z1)/first(z1));
-		cout << z1 << ", " << -z1/first(z1) << endl;
+		file << z1 << "," << sigma(z1) << "," << pow(z1*help(z1)/first(z1), 2.0)/(4.0*k);
+		//cout << z1 << ", " << -z1/first(z1) << endl;
 		//if (z1/second(z1) > prev) cout << z1 << ", " << prev << endl << endl;
 		//prev = z1/second(z1);
 		if (i != grids) file << ",";
@@ -457,8 +480,8 @@ void testing(int grids)
 int main()
 {
 	int grids = 400000; //400000; // for graphs with varying sigma
-	p = 2.0;
-	gama = 1.0;
+	p = 3.0;
+	gama = 0.0;
 	mu = 0.0;
 	k = 1.0;
 	
@@ -466,7 +489,7 @@ int main()
 	
 	//phase(grids);
 	
-	//testing(grids);
+	testing(grids);
 	
 	//info = true;
 	
@@ -477,7 +500,7 @@ int main()
 	//cout << div2_z1() << endl;
 	
 	
-	bunin(100000);
+	bunin3(100000);
 	
 	
 	
