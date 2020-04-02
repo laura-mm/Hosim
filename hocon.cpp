@@ -27,6 +27,12 @@ ArrayXd mu(4);
 ArrayXd gama(4); // should this maybe be a Vector or a Tensor?
 ArrayXd sigma(4); // its ok for now but may need to be different in numerical solution
 int p;
+int runs;
+
+vector<double> muval;
+vector<double> gammaval;
+vector<double> sigmaval;
+
 
 template<typename T>
 using  ArrayType = Eigen::Array<T, Eigen::Dynamic, 1>;
@@ -235,13 +241,13 @@ class simulation
 		fixed = true;
 		for (int t = 2; t < (0.01*T)+2; t++)
 		{
-			if (((abs(trajx[t] - trajx[t-1]) < 0.0001) || (abs((trajx[t] - trajx[t-1])/(trajx[t-1] - trajx[t-2])) < 1.0)).minCoeff() == 0) {fixed = false; break;}
-			if (((abs(trajy[t] - trajy[t-1]) < 0.0001) || (abs((trajy[t] - trajy[t-1])/(trajy[t-1] - trajy[t-2])) < 1.0)).minCoeff() == 0) {fixed = false; break;}
+			if (((abs(trajx[t] - trajx[t-1]) < 0.001) || (abs((trajx[t] - trajx[t-1])/(trajx[t-1] - trajx[t-2])) < 1.0)).minCoeff() == 0) {fixed = false; break;}
+			if (((abs(trajy[t] - trajy[t-1]) < 0.001) || (abs((trajy[t] - trajy[t-1])/(trajy[t-1] - trajy[t-2])) < 1.0)).minCoeff() == 0) {fixed = false; break;}
 		}
 		unique = true;
 		for (int t = 2; t < (0.01*T)+2; t++)
 		{
-			if (((abs(trajx[t] - trajy[t]) < 0.0001) || (abs((trajx[t] - trajy[t])/(trajx[t-1] - trajy[t-1])) < 1.0)).minCoeff() == 0) {unique = false; break;}
+			if (((abs(trajx[t] - trajy[t]) < 0.001) || (abs((trajx[t] - trajy[t])/(trajx[t-1] - trajy[t-1])) < 1.0)).minCoeff() == 0) {unique = false; break;}
 		}
 	}
 	void run()
@@ -415,6 +421,68 @@ void fiveplot(int grid, int runs) // for a single p
 	}
 }
 
+void allplot(int v1, int v2, int v3)
+{
+	ofstream fivefile; fivefile.open("five3_" + to_string(v1) + "_" + to_string(v2) + "_" + to_string(v3) + ".txt");
+	ofstream histfile; histfile.open("hist3_" + to_string(v1) + "_" + to_string(v2) + "_" + to_string(v3) + ".txt");
+	ofstream colourfile; colourfile.open("colour3_" + to_string(v1) + "_" + to_string(v2) + "_" + to_string(v3) + ".txt");
+	
+	mu(p-2) = muval[v1];
+	gama(p-2) = gammaval[v2];
+	sigma(p-2) = sigmaval[v3];
+	
+	int count0 = 0;
+	int count1 = 0;
+	int count2 = 0;
+	
+	ArrayXd meas = ArrayXd::Zero(6);
+		
+	for (int r = 0; r < runs; r++)
+	{
+		simulation sim;
+		sim.run();
+		
+		meas += sim.measures();
+		
+		for (int t = 0; t < T/100; t++)
+		{
+			histfile << sim.trajx[t].format(c);
+			if (t != (T/100) - 1) histfile << ",";
+		}
+		if (r != runs-1) histfile << ",";
+		
+		if (sim.diverge == false)
+		{
+			if (sim.fixed) {if (sim.unique) count0 ++; else count1 ++;}
+			else count2 ++;
+			//cout << sim.fixed << sim.unique << endl;
+		}
+	}
+	
+	double R = (double)count0/(double)runs; // normalised values
+	double G = (double)count1/(double)runs;
+	double B = (double)count2/(double)runs;
+	
+	if (R + G + B == 3.0) {R = 0.0; G = 0.0; B = 0.0;} // lintrans
+	else
+	{
+		double div = 1.0 - (R + G + B);
+
+		R += div;
+		G += div;
+		B += div;
+	}
+	
+	meas /= (double)runs;
+	fivefile << meas.format(c);
+	
+	colourfile << R << "," << G << "," << B;
+
+	fivefile.close();
+	histfile.close();
+	colourfile.close();
+}
+
 int main(int argc, char** argv) // for condor
 {
 	gama = ArrayXd::Zero(4);
@@ -425,39 +493,20 @@ int main(int argc, char** argv) // for condor
 	Nd = (double)N;
 	T = 200000;
 	dt = 0.001;
-	//int grid = 20; // for fiveplots
-	int runs = 10;
-	mu(p-2) = 0.15;
+	int grid = 20; // for fiveplots
+	runs = 10;
+	
+	muval = vector<double>{-0.25, -0.05, 0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.6, 1.0};
+	gammaval = vector<double>{-0.5, -0.4, -0.2, 0.0, 0.4, 1.0};
+	sigmaval = vector<double>(21);
+	for (int i = 0; i <= 20; i++) sigmaval[i] = pow(10.0, (0.1*(double)i) - 1.5);
 	
 	
 	int v1 = atoi(argv[1]);
 	int v2 = atoi(argv[2]);
+	int v3 = atoi(argv[3]);
 
-
-	string filename = "five3+15_" + to_string(v1) + "_" + to_string(v2) + ".txt"; // letter represents order
-	ofstream file; file.open(filename);
-
-	//file << v1 << ", " << v2 << endl;
-
-	//gama(p-2) = ((p - 2.0)*(double)v1*(double)v1/(2.0*(p - 1.0))) + ((4.0 - p)*(double)v1/(2.0*(p - 1.0))) -1.0/(p - 1.0);
-	gama(p-2) = (double)v1;
-	//double po = ((double)v2/10.0) - 2.0;
-	//sigma(p-2) = pow(10.0, po);
-	sigma(p-2) = ((double)v2/20.0);
-	
-	ArrayXd meas = ArrayXd::Zero(6);
-		
-	for (int r = 0; r < runs; r++)
-	{
-		//cout << "g " << g << ", s " << s << ", r " << r << endl;
-		simulation sim;
-		sim.run();
-		meas += sim.measures();
-	}
-	meas /= (double)runs;
-	file << meas.format(c);
-
-	file.close();	
+	allplot(v1, v2, v3);	
 	
 	return 0;
 }
