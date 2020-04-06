@@ -22,6 +22,10 @@ double gama;
 double mu;
 double k;
 
+vector<double> muval;
+vector<double> gammaval;
+vector<double> sigmaval;
+
 // first plan - to be able to find fixed point values of M, q, X for given values of sigma, mu, gamma, for a fixed value of p
 // but I think what we have at the moment is a map from z1, mu, gamma to the rest.
 // not sure if this is the best way to find it but I can look at that later
@@ -101,8 +105,8 @@ double M(double Mstart, double z1) //this is a solution to a p-order polynomial,
 		if (mu == 0.0) return -k*first(z1)/(z1*help(z1));
 		else
 		{
-			if (pow(z1*help(z1)/first(z1), 2.0) < 4.0*mu*k) return 1.0/0.0;
-			else return ((z1*help(z1)/first(z1)) + sqrt(pow(z1*help(z1)/first(z1), 2.0) - (4.0*mu*k)))/(-2.0*mu);
+			//if (pow(z1*help(z1)/first(z1), 2.0) < 4.0*mu*k) return 1.0/0.0;
+			return ((z1*help(z1)/first(z1)) + sqrt(pow(z1*help(z1)/first(z1), 2.0) - (4.0*mu*k)))/(-2.0*mu);
 		}
 	}
 	
@@ -166,9 +170,19 @@ double mud2(double z1) // for p = 2 this is the value of mu where we find diverg
 	return -z1*help(z1)/first(z1);
 }
 
-double mud3(double z1) // for p = 3, value of mu where no solutions for M, no sure if divergence
+double mud3(double z1) // for p = 3, value of mu where no solutions for M, not sure if divergence
 {
 	return pow(z1*help(z1)/first(z1), 2.0)/(4.0*k);
+}
+
+double otherM(double z1) // for p = 3 only
+{
+	return ((z1*help(z1)/first(z1)) - sqrt(pow(z1*help(z1)/first(z1), 2.0) - (4.0*mu*k)))/(-2.0*mu);
+}
+
+double othersig(double z1) // other sigma for p = 3
+{
+	return help(z1)*sqrt(2.0/(p*pow(second(z1), p - 1.0)))*pow(first(z1)/otherM(z1), p - 2.0);
 }
 
 ///////////////////////////////// end of equation type stuff
@@ -196,8 +210,51 @@ double crit_z1() // depends on p only
 		//if (info == true) {cout << "z1 " << z1 << ", y " << y << endl;}
 		if (small > pow(10.0, -10.0)) small /= 10.0;
 	}
-	
 	return z1;	
+}
+
+double div3_z1(double zstart) //I dont know about this!!!
+{
+	/*ofstream zz; zz.open("zz.txt");
+	ofstream ab; ab.open("abs.txt");
+	
+	int grid = 1000000;
+
+	cout << "now plotting function for zdiv for mu = " << mu << endl;
+	
+	for (int i = 0; i <= grid; i++)
+	{
+		double z = 100.0*(double)i/(double)grid - 50.0;
+		zz << z;
+		ab << pow(z*help(z)/first(z), 2.0)/(4.0*k) - mu << "," << sigma(z);
+		if (i != grid) {zz << ", "; ab << ", ";}
+	}
+	zz.close(); ab.close();
+	cout << "finished plotting z" << endl;*/
+	double z1 = zstart;
+	double small = pow(10.0, -6.0);
+	double y = mud3(z1) - mu;
+	double grad;
+	cout << "z1 " << z1 << ", y " << y << endl;
+	double ynew;
+	double znew;
+	while (abs(y) > 0.0)
+	{
+		grad = (mud3(z1 + small) - mud3(z1 - small))/(2.0*small);
+		if (grad == 0.0) break;
+		cout << "small " << small << " grad " << grad << endl;
+		znew = z1 - (y/grad);
+		cout << "znew = " << znew << ", sigma = " << sigma(znew) << endl;
+		if  (!(sigma(znew) >= 0.0)) break;
+		ynew = mud3(znew) - mu;
+		if (abs(ynew) >= abs(y) && ((ynew*y) > 0.0 || abs(y) < pow(10.0, -5.0))) break;
+		y = ynew;
+		z1 = znew;
+		cout << "z1 " << z1 << ", y " << y << endl;
+		if (small > pow(10.0, -10.0)) small /= 10.0;
+	}
+	if (abs(y) > pow(10.0, -4.0)) return 0.0;
+	else return z1;
 }
 
 
@@ -277,9 +334,6 @@ void fiveplot(int grid)
 		critfile << sigma(zcrit); // critical sigma
 
 		vector<ArrayXd> sigmat;
-		double start = -40.0;
-		double end = 40.0;
-		double range = end - start;
 		
 		double Mstart = k;
 		double sig_prev = -1.0; // next sigma has to be bigger than previous
@@ -293,7 +347,7 @@ void fiveplot(int grid)
 			if (sigma(z1) < 0.0) continue; //{cout << "bad solution 3 " << z1 << endl; continue;}
 			//if (!(abs(sigma(z1)) >= 0.0)) continue; //{cout << "bad solution 4 " << z1 << endl; continue;}
 			if (sigma(z1) > 10.0) continue;
-			//if (sigma(z1) < sig_prev) break; // this one!
+			if (sigma(z1) < sig_prev) break; // this one!
 			//if (sig(z1, z2) == 0.0) continue; // this is for histograms only
 
 			ArrayXd entry = ArrayXd::Zero(6); // sigma, z1, phi, M, q, help
@@ -326,6 +380,46 @@ void fiveplot(int grid)
 		}
 		file.close();
 		if (gi != 2) critfile << ",";
+	}
+	critfile.close();
+}
+
+void fiveplot3(int grid, int mi)
+{
+	mu = muval[mi];
+	
+	string critstr = "crit3_" + to_string(mi) + ".txt";
+	ofstream critfile; critfile.open(critstr);
+	
+	double zcrit = crit_z1();
+	//cout << "crit " << zcrit << endl;
+	
+	for (int gi = 0; gi < 6; gi++)
+	{
+		cout << mi << "," << gi << endl;
+		
+		string filename = "measfp3_" + to_string(mi) + "_" + to_string(gi)+ ".txt";
+		ofstream file; file.open(filename);
+
+		gama = gammaval[gi];
+		critfile << sigma(zcrit); // critical sigma
+	
+		double Mstart = k;
+		double sig_prev = -1.0; // next sigma has to be bigger than previous
+
+		for (int i = 0; i <= grid; i++)
+		{
+			double z1 = ((double)i*100.0/(double)grid) - 50.0;
+			if (sigma(z1) < 0.0) continue; //{cout << "bad solution 3 " << z1 << endl; continue;}
+			//if (!(abs(sigma(z1)) >= 0.0)) continue; //{cout << "bad solution 4 " << z1 << endl; continue;}
+			//if (sigma(z1) < sig_prev) break; // this one!
+			sig_prev = sigma(z1);
+			if (i != 0) file << ",";
+			//cout << "i " << i << ", z1 " << z1 << ", phi " << phi(z1) << ", M " << entry(3) << ", sig " << sigma(z1) << ", q " << q(z1) << endl;
+			file << sigma(z1) << "," << z1 << "," << phi(z1) << "," << M(0.0, z1) << "," << q(z1) << "," << help(z1);
+		}
+		file.close();
+		if (gi != 5) critfile << ",";
 	}
 	critfile.close();
 }
@@ -374,23 +468,85 @@ void bunin2(int grid) // for a phase diagram like bunin
 	file.close();
 }
 
-void bunin3(int grid)
+
+
+void bunin3(int grid, int gi)
 {
-	ofstream file; file.open("bunin3_" + to_string((int)(10.0*gama)) + ".txt");
-	double sig_prev = -1.0;
+	gama = gammaval[gi];
+	double z1 = crit_z1();
+	
+	ofstream fil; fil.open("mu3_" + to_string(gi) + ".txt");
 	for (int i = 0; i <= grid; i++)
 	{
-		double z1 = 100.0*(double)i/(double)grid - 50.0;
+		mu = (4.0*(double)i/(double)grid) - 3.0;
+		if (i != 0) fil << ",";
+		fil << mu << "," << sigma(z1);
+		//cout << mu << ", " << sigma(crit_z1()) << endl;
+	}
+	fil.close();
+	
+	ofstream file; file.open("bunin3_" + to_string(gi) + ".txt");
+	vector<ArrayXd> muz;
+	for (int i = 0; i <= grid; i++)
+	{
+		z1 = 100.0*(double)i/(double)grid - 50.0;
 		mu = mud3(z1);
-		//if (sigma(z1) < sig_prev) break; // this one!
-		sig_prev = sigma(z1);
+		if (!(sigma(z1) >= 0.0)) break; // this one!
 		if (i != 0) file << ",";
-		file << mu << "," << sigma(crit_z1()) << "," << sigma(z1);
-		cout << z1 << ", " << mu << "," << sigma(crit_z1()) << "," << sigma(z1) << endl;
+		file << mu << "," << sigma(z1);
+		//cout << z1 << ", " << mu << "," << sigma(crit_z1()) << "," << sigma(z1) << endl;
 	}
 	file.close();
-}
+	
+	ofstream fild; fild.open("div3_" + to_string(gi) + ".txt");
+	for (int mi = 0; mi < 12; mi ++)
+	{
+		mu = muval[mi];
+		double zlow = 1.0;
+		double zhigh = 1.0;
+		for (int i = 0; i <= grid; i++)
+		{
+			z1 = 100.0*(double)i/(double)grid - 50.0;
+			if (sigma(z1) > 0 && sigma(z1) < 1.0/0.0)
+			{
+				if (zlow == 1.0 || zhigh == 1.0) {zlow = z1; zhigh = z1;}
+				else zhigh = z1; //cout << "zhigh = " << zhigh << ", sigma = " << sigma(zhigh) << endl;}
+				// the plot of sigma is dashy, so could put a break in here if sigma is not positive?
+			}
+		}
+		//cout << "gamma = " << gama << ", mu = " << mu << ", zlow = " << zlow << ", mud3(zlow) = " << mud3(zlow) << ", zhigh = " << zhigh << ", mud3(zhigh) = " << mud3(zhigh) << endl;
+		ofstream zz; zz.open("zz.txt");
+		ofstream ab; ab.open("abs.txt");
+	
+/*
+		cout << "now plotting function for zdiv" << endl;
+	
+		for (int i = 0; i <= grid; i++)
+		{
+			double z = 100.0*(double)i/(double)grid - 50.0;
+			zz << z;
+			//if (abs(z - zlow) < 0.1) cout << "z = " << z << ", mud3(z) = " << mud3(z) << ", mu = " << mu << ", sigma = " << sigma(z) << endl;
+			//if (abs(z - zhigh) < 0.1) cout << "z = " << z << ", mud3(z) = " << mud3(z) << ", mu = " << mu << ", sigma = " << sigma(z) << endl;
+			ab << mud3(z) - mu << "," << sigma(z);
+			if (i != grid) {zz << ", "; ab << ", ";}
+		}
+		zz.close(); ab.close();
 		
+		cout << "finished" << endl;
+*/		
+		if (abs(mud3(zlow) - mu) < 0.001) {fild << sigma(zlow); cout << "sigmalow = " << sigma(zlow) << endl;}
+		else fild << 1.0/0.0;
+		fild << ",";
+		if (abs(mud3(zhigh) - mu) < 0.001) {fild << sigma(zhigh); cout << "sigmahigh = " << sigma(zhigh) << endl;}
+		else fild << 1.0/0.0;
+		if (mi != 11) fild << ",";
+		
+		//string inn;
+		//cin >> inn;
+	}
+	fild.close();
+}
+	
 
 /*
 // this one is for testing
@@ -466,7 +622,7 @@ void testing(int grids)
 	double prev = 1.0;
 	for (int i = 0; i <= grids; i ++)
 	{
-		double z1 = (5.0*double(i)/(double)grids) - 4.0;
+		double z1 = (10.0*double(i)/(double)grids) - 9.0;
 		file << z1 << "," << sigma(z1) << "," << pow(z1*help(z1)/first(z1), 2.0)/(4.0*k);
 		//cout << z1 << ", " << -z1/first(z1) << endl;
 		//if (z1/second(z1) > prev) cout << z1 << ", " << prev << endl << endl;
@@ -482,14 +638,24 @@ int main()
 	int grids = 400000; //400000; // for graphs with varying sigma
 	p = 3.0;
 	gama = 0.0;
-	mu = 0.0;
+	mu = -1.0;
 	k = 1.0;
 	
-	//fiveplot(grids);
+	muval = vector<double>{-0.25, -0.05, 0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.6, 1.0};
+	gammaval = vector<double>{-0.5, -0.4, -0.2, 0.0, 0.4, 1.0};
+	sigmaval = vector<double>(21);
+	for (int i = 0; i <= 20; i++) sigmaval[i] = pow(10.0, (0.1*(double)i) - 1.5);
+	
+	//for (int mi = 0; mi < 12; mi++) fiveplot3(grids, mi);
+	for (int gi = 0; gi < 6; gi++) bunin3(1000000, gi);
+	
+	//div3_z1(0.0);
+	
+	//fiveplot3(grids);
 	
 	//phase(grids);
 	
-	testing(grids);
+	//testing(grids);
 	
 	//info = true;
 	
@@ -500,7 +666,14 @@ int main()
 	//cout << div2_z1() << endl;
 	
 	
-	bunin3(100000);
+	//bunin3(1000000);
+	
+	/*for (int i = 0; i <= 1000000000; i++)
+	{
+		double z1 = 0.000006*(double)i/100000000.0 - 0.589555;
+		//cout << z1 << ", " << mud3(z1) << endl;
+		if (abs(mud3(z1) - 0.15) < 0.000000000001) cout << sigma(z1) << endl;
+	}*/
 	
 	
 	

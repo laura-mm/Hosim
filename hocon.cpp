@@ -254,7 +254,7 @@ class simulation
 	{
 		for (int t = 0; t < T; t++)
 		{	
-			//cout << t << endl;
+			cout << t << endl;
 
 			// should comment out a lot of this stuff when isolating orders
 			
@@ -330,7 +330,7 @@ class simulation
 				
 				
 				
-				if (Tarr(xtemp, N).maxCoeff() > pow(10.0, 10.0) || Tarr(ytemp, N).maxCoeff() > pow(10.0, 20.0) || Tarr(xtemp, N).minCoeff() < 0.0 || Tarr(ytemp, N).minCoeff() < 0.0) diverge = true;
+				if (Tarr(xtemp, N).maxCoeff() > pow(10.0, 10.0) || Tarr(ytemp, N).maxCoeff() > pow(10.0, 10.0) || Tarr(xtemp, N).minCoeff() < 0.0 || Tarr(ytemp, N).minCoeff() < 0.0) diverge = true;
 				else {x = xtemp; y = ytemp;}
 				
 			}
@@ -439,6 +439,8 @@ void allplot(int v1, int v2, int v3)
 		
 	for (int r = 0; r < runs; r++)
 	{
+		cout << "mu = " << mu(p-2) << ", gamma = " << gama(p-2) << ", sigma = " << sigma(p-2) << ", run = " << r << endl;
+		
 		simulation sim;
 		sim.run();
 		
