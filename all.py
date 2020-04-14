@@ -11,7 +11,7 @@ import math
 #plt.rc('legend', fontsize=20)
 grid = 30
 col = ['m', 'r', 'y', 'g', 'c', 'b']
-col0 = ['m.', 'r.', 'y.', 'g.', 'c.', 'b.']
+colo = ['m.', 'r.', 'y.', 'g.', 'c.', 'b.']
 lab = ['$\gamma = -\frac{1}{p-1}$', '$\gamma = 0$', '$\gamma = 1$']
 mark = ['s', 'D', '^', 'v', '<', '>']
 #lett = ['$(a)$', '$(b)$', '$(c)$', '$(d)$', '$(e)$', '$(f)$']
@@ -37,22 +37,23 @@ for mi in range(12):
 	crit.append(c)
 crit = np.transpose(crit)
 
-"""
+
 # phi, M, diversity fiveplots
 ###############################################################
 
-#meas = np.loadtxt("allfive3.txt", delimiter=",")
-#meas = meas.reshape(12, 6, 21, 6)
-#meas = np.transpose(meas, (0, 1, 3, 2)) # mu, gam, meas, sig
+meas = np.loadtxt("allfive3.txt", delimiter=",")
+meas = meas.reshape(12, 6, 21, 6)
+meas = np.transpose(meas, (0, 1, 3, 2)) # mu, gam, meas, sig
 
 
 
 		
 for mi in range (1):
 
-	mi = 8
+	mi = 11
 	
-	plt.figure(mi + 1)
+	plt.figure(mi + 1, figsize = (6, 12))
+	#plt.subplots(5, 1, figsize=(6,15))
 
 	
 	measfp = []
@@ -62,10 +63,10 @@ for mi in range (1):
 		g = np.transpose(g)
 		measfp.append(g)
 
-	plt.subplot(3, 1, 1) # phi
+	plt.subplot(5, 1, 1) # phi
 	for gi in range(6):
 		plt.semilogx(measfp[gi][0], measfp[gi][2], col[gi])
-		#plt.semilogx(sigmaval, meas[mi][gi][0], colo[gi], label = "g = {0}".format(gammaval[gi]))             
+		plt.semilogx(sigmaval, meas[mi][gi][0], colo[gi], label = "g = {0}".format(gammaval[gi]))             
 		plt.axvline(x = crit[gi][mi], linestyle = '--', color = col[gi])
 		plt.axvline(x = div[gi][0][mi], linestyle = ':', color = col[gi])
 		plt.axvline(x = div[gi][1][mi], linestyle = ':', color = col[gi])
@@ -73,10 +74,11 @@ for mi in range (1):
 	plt.ylabel("phi")
 	plt.title("mu = {0}".format(muval[mi]))
 	
-	plt.subplot(3, 1, 2) # M
+	plt.subplot(5, 1, 2) # M
 	for gi in range(6):
 		plt.semilogx(measfp[gi][0], measfp[gi][3], col[gi])
-		#plt.semilogx(sigmaval, meas[mi][gi][1], colo[gi], label = "g = {0}".format(gammaval[gi]))
+		plt.semilogx(sigmaval, meas[mi][gi][1], colo[gi], label = "g = {0}".format(gammaval[gi]))
+		print(meas[mi][gi][1])
 		plt.axvline(x = crit[gi][mi], linestyle = '--', color = col[gi])
 		plt.axvline(x = div[gi][0][mi], linestyle = ':', color = col[gi])
 		plt.axvline(x = div[gi][1][mi], linestyle = ':', color = col[gi])
@@ -84,18 +86,46 @@ for mi in range (1):
 	plt.ylim([0, 3])
 	plt.ylabel("M")
 		
-	plt.subplot(3, 1, 3) # diversity
+	plt.subplot(5, 1, 3) # diversity
 	for gi in range(6):
 		plt.semilogx(measfp[gi][0], measfp[gi][3]*measfp[gi][3]/measfp[gi][4], col[gi], label = "gamma = {0}".format(gammaval[gi]))
-		#plt.semilogx(sigval, meas[mi][gi][3], colo[gi], label = "g = {0}".format(gammaval[gi]))
+		plt.semilogx(sigmaval, meas[mi][gi][3], colo[gi])
 		plt.axvline(x = crit[gi][mi], linestyle = '--', color = col[gi])
 		plt.axvline(x = div[gi][0][mi], linestyle = ':', color = col[gi])
 		plt.axvline(x = div[gi][1][mi], linestyle = ':', color = col[gi])
 	plt.xlim([10**(-1.5), 10**0.5])
 	plt.xlabel("sigma")
 	plt.ylabel("diversity")
-	plt.legend(bbox_to_anchor=(0, -0.4, 1, 0.2), loc='lower left', ncol=3, mode="expand", borderaxespad=0)
+	
+	
+	plt.subplot(5, 1, 4) # dsqaured distance between 2 trajectories
+	for gi in range(6):
+		plt.semilogx(sigmaval, meas[mi][gi][4], col[gi])
+		plt.axvline(x = crit[gi][mi], linestyle = '--', color = col[gi])
+		plt.axvline(x = div[gi][0][mi], linestyle = ':', color = col[gi])
+		plt.axvline(x = div[gi][1][mi], linestyle = ':', color = col[gi])
+	plt.xlim([10**(-1.5), 10**0.5])
+	#plt.ylim([0, 10])
+	plt.xlabel("sigma")
+	plt.ylabel("d squared")
+	
+	plt.subplot(5, 1, 5) # h variance over last 1% of trajectory
+	for gi in range(6):
+		plt.semilogx(sigmaval, meas[mi][gi][5], col[gi], label = "gamma = {0}".format(gammaval[gi]))
+		plt.axvline(x = crit[gi][mi], linestyle = '--', color = col[gi])
+		plt.axvline(x = div[gi][0][mi], linestyle = ':', color = col[gi])
+		plt.axvline(x = div[gi][1][mi], linestyle = ':', color = col[gi])
+	plt.xlim([10**(-1.5), 10**0.5])
+	#plt.ylim([0, 0.001])
+	plt.xlabel("sigma")
+	plt.ylabel("h")
+	#plt.legend()
+	plt.legend(bbox_to_anchor=(0, -1.2, 1, 0.2), loc='lower left', ncol=3, mode="expand", borderaxespad=0)
+	
+	plt.subplots_adjust(bottom = 0.2, top = 0.96)
+	
 	plt.savefig("five3_{0}.pdf".format(mi))
+	
 	
 	
 	
@@ -103,21 +133,31 @@ for mi in range (1):
 # bunin plots with coloured scatter graph
 ######################################################
 
-#colour = np.loadtxt("allcolour3.txt", delimiter=",")
-#colour = colour.reshape(12, 6, 21, 3)
-#colour = np.transpose(colour, (1, 0, 2, 3)) # gam, mu, sig, colour
+colour = np.loadtxt("allcolour3.txt", delimiter=",")
+colour = colour.reshape(12, 6, 21, 3)
+colour = np.transpose(colour, (1, 0, 2, 3)) # gam, mu, sig, colour
 
 for gi in range(1):
 	
-	gi = 5
+	gi = 0
+
+
 	
 	plt.figure(13 + gi)
 	plt.title("gamma = {0}".format(gammaval[gi]))
+	
+	#print(len(muval))
+	#print(len(sigmaval))
+	#print (colour[gi].shape)
 	
 	#plt.scatter(muval, sigmaval, c=colour[gi], marker = 's', markersize = 5, markeredgewidth = 1, markeredgecolor = 'k')
 	plt.scatter(muval, crit[gi], marker = 'x', color = 'k')
 	plt.scatter(muval, div[gi][0], marker = '.', color = 'k')
 	plt.scatter(muval, div[gi][1], marker = '.', color = 'k')
+	
+	for mi in range(12):
+		for si in range(21):
+			plt.scatter(muval[mi], sigmaval[si], c=colour[gi][mi][si], marker = 's', edgecolor = 'k')#, size = 5, linewidth = 1)
 	
 	z = np.loadtxt("bunin3_{0}.txt".format(gi), delimiter = ",")
 	z = z.reshape(len(z)/2, 2)
@@ -136,6 +176,6 @@ for gi in range(1):
 	plt.ylabel("sigma")
 	plt.savefig("bunin3_{0}.pdf".format(gi))
 
-
+"""
 plt.show()
 
