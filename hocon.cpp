@@ -129,7 +129,7 @@ Tensor<double, 2> order2()
 }
 */
 
-Tensor<double, 3> order3()
+Tensor<double, 3> order3() // now corrected for gamma = 1
 {
 	Tensor<double, 3> A(N, N, N);
 	A.setZero();
@@ -139,7 +139,9 @@ Tensor<double, 3> order3()
 		{
 			for (int k = 0; k < j; k++)
 			{
-				MatrixXd cho = cholesky(3);
+				MatrixXd cho(3, 3);
+				if (gama(1) == 1.0) {cho.setZero(); cho(0, 0) = 1.0; cho(1, 0) = 1.0; cho(2, 0) = 1.0;}
+				else cho = cholesky(3);
 				VectorXd z(3);
 				for (int zi = 0; zi < 3; zi++) z(zi) = distributionn(twist);
 				MatrixXd list = cho*z;
@@ -247,14 +249,23 @@ class simulation
 		unique = true;
 		for (int t = 2; t < (0.01*T)+2; t++)
 		{
-			if (((abs(trajx[t] - trajy[t]) < 0.001) || (abs((trajx[t] - trajy[t])/(trajx[t-1] - trajy[t-1])) < 1.0)).minCoeff() == 0) {unique = false; break;}
+			if (((abs(trajx[t] - trajy[t]) < 0.001) || (abs((trajx[t] - trajy[t])/(trajx[t-1] - trajy[t-1])) < 1.0)).minCoeff() == 0)
+			{
+				unique = false;
+				cout << " not unique at t = " << t << endl;
+				for (int i = 0; i < N; i ++)
+				{
+					cout << abs(trajx[t](i) - trajy[t](i)) << ", " << abs((trajx[t](i) - trajy[t](i))/(trajx[t-1](i) - trajy[t-1](i))) << endl;
+				}
+				break;
+			}
 		}
 	}
 	void run()
 	{
 		for (int t = 0; t < T; t++)
 		{	
-			cout << t << endl;
+			if (t % 1000 == 0) cout << t << endl;
 
 			// should comment out a lot of this stuff when isolating orders
 			
@@ -334,6 +345,8 @@ class simulation
 				else {x = xtemp; y = ytemp;}
 				
 			}
+
+			cout << Tarr(x, N)[0] << ", " << Tarr(y, N)[0] << endl;
 	
 			// store data //////////////////
 
@@ -344,7 +357,7 @@ class simulation
 			if (t >= (0.99*T)-2) {trajx.push_back(Tarr(x, N)); trajy.push_back(Tarr(y, N));} //
 
 		}
-		//if (diverge == false) check();
+		if (diverge == false) check();
 	}
 	ArrayXd measures()
 	{
@@ -485,13 +498,54 @@ void allplot(int v1, int v2, int v3)
 	colourfile.close();
 }
 
+void testplot(int v1, int v2, int v3)
+{
+
+	ofstream data;
+	data.open ("trajectories.txt");
+
+	mu(p-2) = muval[v1];
+	gama(p-2) = gammaval[v2];
+	sigma(p-2) = sigmaval[v3];
+	
+	simulation sim;
+	/*for (int row = 0; row < N; row ++)
+	{
+		for (int col = 0; col < N; col ++)
+		{
+			for (int dep = 0; dep < N; dep ++)
+			{
+				cout << sim.B(row, col, dep);
+				if (dep != N - 1) cout << ", ";
+			}
+			if (col != N - 1) cout << endl;
+		}
+		cout << endl << endl;
+	}*/
+	sim.run();
+	cout << "diverge " << sim.diverge << endl;
+	cout << "fixed " << sim.fixed << endl;
+	cout << "unique " << sim.unique << endl;
+		
+	for (int i = 0; i < N; i++)
+	{
+		for (int t = 0; t < sim.trajx.size(); t++)
+		{
+			data << t << "," << sim.trajx[t](i)<< "," << sim.trajy[t](i);
+			if (i != N-1 || t != sim.trajx.size() - 1) data << ",";
+		}
+	}
+
+	data.close();
+}
+
 int main(int argc, char** argv) // for condor
 {
 	gama = ArrayXd::Zero(4);
 	mu = ArrayXd::Zero(4);
 	sigma = ArrayXd::Zero(4);
 	p = 3;
-	N = 100; //200;
+	N = 20; //200;
 	Nd = (double)N;
 	T = 200000;
 	dt = 0.001;
@@ -508,10 +562,14 @@ int main(int argc, char** argv) // for condor
 	int v2 = atoi(argv[2]);
 	int v3 = atoi(argv[3]);
 
-	allplot(v1, v2, v3);	
+	//allplot(v1, v2, v3);
+
+	testplot(v1, v2, v3);
 	
 	return 0;
 }
+
+
 				
 
 
@@ -543,29 +601,7 @@ void histogram(int runs)
 }
 
 
-void plot(double sigma, double gamma, int plots)
-{
 
-	ofstream datax;
-	datax.open ("trajectoriesx.txt");
-	ofstream datay;
-	datay.open ("trajectoriesy.txt");
-	
-	simulation sim(sigma, gamma);
-	sim.run();
-	cout << sim.fixed << endl;
-	cout << sim.unique << endl;
-		
-	for (int i = 0; i < plots; i++)
-	{
-		for (int t = 0; t < T; t++)
-		{
-			datax << sim.trajx[t](i);
-			datay << sim.trajy[t](i);
-			if (i != plots-1 || t != T-1) {datax << ","; datay << ",";}
-		}
-	}
-}
 
 */
 
