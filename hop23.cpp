@@ -102,12 +102,10 @@ double M(double z1, double help) //this is a solution to a p-order polynomial, s
 		if (grad == 0.0) {cout << "grad 0 " << endl; return 1.0/0.0;}
 		//if (info == true) {cout << "small " << small << " grad " << grad << endl;}
 		Mnew = MM - (y/grad);
-		// if (z1 + zz < 0.0) cout << "badd" << endl;
 		ynew = (Mcoeff*Mnew) + mutot(Mnew) + k;
 		if (abs(ynew) >= abs(y) && ((ynew*y) > 0.0 || abs(y) < pow(10.0, -5.0))) break;
 		y = ynew;
 		MM = Mnew;
-		//if (info == true) {cout << "z1 " << z1 << ", y " << y << endl;}
 		if (small > pow(10.0, -10.0)) small /= 10.0;
 	}
 	
