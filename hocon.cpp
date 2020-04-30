@@ -361,7 +361,7 @@ class simulation
 	}
 	ArrayXd measures()
 	{
-		ArrayXd m = ArrayXd::Zero(6); // phi, M, q, diversity, dsq, h, the last 3 are relative things
+		ArrayXd m = ArrayXd::Zero(7); // phi, M, q, diversity, dsq, h, the last 3 are relative things
 		
 		ArrayXd sum1 = ArrayXd::Zero(N);
 		ArrayXd sum2 = ArrayXd::Zero(N);
@@ -375,7 +375,10 @@ class simulation
 			double M = trajx[t].mean();
 			//if (t == 0) cout << trajx[t] << endl;
 			double q = (trajx[t]*trajx[t]).mean();
-			for (int i = 0; i < N; i++) if (trajx[t](i) > 0.0001) m(0) ++;
+			for (int i = 0; i < N; i++)
+			{
+				if (trajx[t](i) > 0.0001) m(0) ++; // or always decreasing?
+				if ((abs(trajx[t+1]) < 0.0001) || (abs(trajx[t+1](i)/trajx[t](i)) < 1.0)) m(6) ++;
 
 			m(1) += M;
 			//cout << "m1 " << m(1) << endl;
@@ -390,6 +393,7 @@ class simulation
 		sum2 /= (0.01*(double)T);
 
 		m(0) /= 0.01*(double)N*(double)T;
+		m(6) /= 0.01*(double)N*(double)T;
 		m(1) /= 0.01*(double)T;
 		m(2) /= 0.01*(double)T;
 		m(3) /= 0.01*(double)T;
@@ -417,7 +421,7 @@ void fiveplot(int grid, int runs) // for a single p
 		
 			double po = (2.0*s/(double)grid) - 1.0;
 			sigma(p-2) = pow(10.0, po);
-			ArrayXd meas = ArrayXd::Zero(6);
+			ArrayXd meas = ArrayXd::Zero(7);
 		
 			for (int r = 0; r < runs; r++)
 			{
@@ -448,7 +452,7 @@ void allplot(int v1, int v2, int v3)
 	int count1 = 0;
 	int count2 = 0;
 	
-	ArrayXd meas = ArrayXd::Zero(6);
+	ArrayXd meas = ArrayXd::Zero(7);
 		
 	for (int r = 0; r < runs; r++)
 	{
@@ -539,6 +543,28 @@ void testplot(int v1, int v2, int v3)
 	data.close();
 }
 
+void Nplot(int v1, int v2, int v3, int v4)
+{
+	ofstream Nfile; fivefile.open("five3_" + to_string(v1) + "_" + to_string(v2) + "_" + to_string(v3) + "_" + to_string(v4) + ".txt");
+	
+	mu(p-2) = muval[v1];
+	gama(p-2) = gammaval[v2];
+	sigma(p-2) = pow(10.0, (0.1*(double)v3) - 1.5);
+	N = (int)pow(10.0, 0.1*(double)v4);
+	
+	ArrayXd meas = ArrayXd::Zero(7);
+		
+	for (int r = 0; r < runs; r++)
+	{
+		simulation sim;
+		sim.run();
+		meas += sim.measures();
+	}
+	meas /= (double)runs;
+	Nfile << N << "," << meas.format(c);
+
+	Nfile.close();
+
 int main(int argc, char** argv) // for condor
 {
 	gama = ArrayXd::Zero(4);
@@ -554,17 +580,19 @@ int main(int argc, char** argv) // for condor
 	
 	muval = vector<double>{-0.25, -0.05, 0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.6, 1.0};
 	gammaval = vector<double>{-0.5, -0.4, -0.2, 0.0, 0.4, 1.0};
-	sigmaval = vector<double>(21);
-	for (int i = 0; i <= 20; i++) sigmaval[i] = pow(10.0, (0.1*(double)i) - 1.5);
+
 	
 	
 	int v1 = atoi(argv[1]);
 	int v2 = atoi(argv[2]);
 	int v3 = atoi(argv[3]);
+	int v4 = atoi(argv[4]);
 
 	//allplot(v1, v2, v3);
 
-	testplot(v1, v2, v3);
+	//testplot(v1, v2, v3);
+	
+	Nplot(v1, v2, v3, v4);
 	
 	return 0;
 }
