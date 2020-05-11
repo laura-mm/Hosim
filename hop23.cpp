@@ -67,30 +67,11 @@ double Mgrad(double z1, double help, double MM, double small)
 
 double M(double z1, double help) //this is a solution to a p-order polynomial, so will probably do newton-raphson?
 {
-	double Mcoeff = help*z1/first(z1); // may be better because doesnt rely on other parameters
-	//double MM = Mstart; // maybe we dont need this? I think this should be set to k
-	double MM = k;
-	
-	if (info == true)
-	{
-	ofstream mm; mm.open("zz.txt");
-	ofstream ab; ab.open("abs.txt");
-
-	cout << "now plotting function for M for z1 = " << z1 << endl;
-	
-	for (int i = 0; i <= 200000; i++)
-	{
-		double m = (0.00001*(double)i);
-		mm << m;
-		ab << (Mcoeff*m) + mutot(m) + k;
-		if (i != 200000) {mm << ", "; ab << ", ";}
-	}
-	mm.close(); ab.close();
-	cout << "finished plotting M" << endl;
-	}
+	if (mu(1) == 0.0) return -k/((z1*help/first(z1)) + mu(0));
+	else return ((z1*help/first(z1)) + mu(0) + sqrt(pow((z1*help/first(z1)) + mu(0), 2.0) - (4.0*mu(1)*k)))/(-2.0*mu(1));
 	
 
-	double small = pow(10.0, -6.0); // dont know about this?
+	/*double small = pow(10.0, -6.0); // dont know about this?
 	double y = (Mcoeff*MM) + mutot(MM) + k;
 	double grad;
 	//if (info == true) {cout << "z1 " << z1 << ", y " << y << endl;}
@@ -111,7 +92,7 @@ double M(double z1, double help) //this is a solution to a p-order polynomial, s
 	
 	//if (!(abs(sigma(z1, z2)) >= 0.0  && abs(gamma(z1, z2)) >= 0.0)) // found the wrong solution
 
-	return MM;
+	return MM;*/
 }
 
 double sigtot(double z1, double help)
@@ -124,14 +105,46 @@ double q(double z1, double help)
 	return second(z1)*pow(M(z1, help)/first(z1), 2.0);
 }
 
+double sigmap(double z1, double help, double p) // for a single value of p
+{
+	return help*sqrt(2.0/(p*pow(second(z1), p - 1.0)))*pow(first(z1)/M(z1, help), p - 2.0); // this one!
+}
+
+
 double gamatot(double z1, double help)
 {
 	return (1.0 - help)/X(z1, help);
 }
 
-// above here is general for all combinations of p, below is for p = 2 and 3 only
+double crit_z1(double p) // depends on p only
+{
+	double z1 = -10.0;
+	double small = pow(10.0, -6.0);
+	double y = second(z1) - (phi(z1)*(p - 1.0));
+	double grad;
+	//if (info == true) {cout << "z1 " << z1 << ", y " << y << endl;}
+	double ynew;
+	double znew;
+	while (abs(y) > 0.0)
+	{
+		grad = ((second(z1 + small) - (phi(z1 + small)*(p - 1.0))) - (second(z1 - small) - (phi(z1 - small)*(p - 1.0))))/(2.0*small);
+		if (grad == 0.0) break;
+		//if (info == true) {cout << "small " << small << " grad " << grad << endl;}
+		znew = z1 - (y/grad);
+		ynew = second(znew) - (phi(znew)*(p - 1.0));
+		if (abs(ynew) >= abs(y) && ((ynew*y) > 0.0 || abs(y) < pow(10.0, -5.0))) break;
+		y = ynew;
+		z1 = znew;
+		//if (info == true) {cout << "z1 " << z1 << ", y " << y << endl;}
+		if (small > pow(10.0, -10.0)) small /= 10.0;
+	}
+	return z1;	
+}
 
-double sig3(double z1, double help, double sig2)
+double z2c;
+double z3c;
+
+double sig3(double z1, double help, double sig2) // for where there is a combination of p = 2 & 3
 {
 	return sqrt(2.0*(pow(sigtot(z1, help), 2.0) - (q(z1, help)*pow(sig2, 2.0)))/(3.0*pow(q(z1, help), 2.0)));
 }
@@ -168,80 +181,146 @@ double sig2_crit(double z1, double help) // this should output the critical valu
 	double y = pow(sig2, 2.0) + (3.0*q(z1, help)*pow(sig3(z1, help, sig2), 2.0)) - (pow(help, 2.0)/phi(z1));
 	double grad;
 	//if (info == true) 
-	{cout << "sig2 " << sig2 << ", y " << y << endl;}
+	//{cout << "sig2 " << sig2 << ", y " << y << endl;}
 	double ynew;
 	double sig2new;
 	while (abs(y) > 0.0)
 	{
 		grad = sgrad(z1, help, sig2, small);
-		cout << "a" << endl;
-		if (grad == 0.0) {cout << "grad 0 " << pow((sig2 + small), 2.0) + (3.0*q(z1, help)*pow(sig3(z1, help, sig2 + small), 2.0)) << ", " << pow((sig2 - small), 2.0) + (3.0*q(z1, help)*pow(sig3(z1, help, sig2 - small), 2.0)) << endl; break;}
+		//cout << "a" << endl;
+		if (grad == 0.0) break; //{cout << "grad 0 " << pow((sig2 + small), 2.0) + (3.0*q(z1, help)*pow(sig3(z1, help, sig2 + small), 2.0)) << ", " << pow((sig2 - small), 2.0) + (3.0*q(z1, help)*pow(sig3(z1, help, sig2 - small), 2.0)) << endl; break;}
 		//if (info == true)
-		{cout << "small " << small << " grad " << grad << endl;}
-		cout << "b" << endl;
+		//{cout << "small " << small << " grad " << grad << endl;}
+		//cout << "b" << endl;
 		sig2new = sig2 - (y/grad);
-		cout << "sig2new " << sig2new << endl;
-		cout << "c" << endl;
-		if (sig2new > sigtot(z1, help)/sqrt(q(z1, help))) {sig2new = sigtot(z1, help)/sqrt(q(z1, help)) - small; cout << "upper bound" << endl;}
-		cout << "d" << endl;
-		if (sig2new < 0.0) {sig2new = 0.0; cout << "lower bound" << endl;}
-		cout << "e" << endl;
+		//cout << "sig2new " << sig2new << endl;
+		//cout << "c" << endl;
+		if (sig2new > sigtot(z1, help)/sqrt(q(z1, help))) {sig2new = sigtot(z1, help)/sqrt(q(z1, help)) - small;} // cout << "upper bound" << endl;}
+		//cout << "d" << endl;
+		if (sig2new < 0.0) {sig2new = 0.0;} // cout << "lower bound" << endl;}
+		//cout << "e" << endl;
 		ynew = pow(sig2new, 2.0) + (3.0*q(z1, help)*pow(sig3(z1, help, sig2new), 2.0)) - (pow(help, 2.0)/phi(z1));
 		if (sig2new == 0.0 && ynew < 0.0) return -1.0;
-		cout << "f" << endl;
-		cout << "ynew " << ynew << endl;
-		cout << "g" << endl;
-		if (abs(ynew) >= abs(y) && ((ynew*y) > 0.0 || abs(y) < pow(10.0, -5.0))) {cout << "broke" << endl; break;}
-		cout << "h" << endl;
+		//cout << "f" << endl;
+		//cout << "ynew " << ynew << endl;
+		//cout << "g" << endl;
+		if (abs(ynew) >= abs(y) && ((ynew*y) > 0.0 || abs(y) < pow(10.0, -5.0))) break; //{cout << "broke" << endl; break;}
+		//cout << "h" << endl;
 		y = ynew;
-		cout << "i" << endl;
+		//cout << "y = " << y << endl;
+		//cout << "i" << endl;
 		sig2 = sig2new;
-		cout << "j" << endl;
+		//cout << "j" << endl;
 		//if (info == true) {cout << "sig2 " << sig2 << ", y " << y << endl;}
 		if (small > pow(10.0, -10.0)) small /= 10.0;
 	}
-	cout << "k" << endl;
+	//cout << "k" << endl;
 	return sig2;
 }
 
-// plan is to first try with mu and gama = 0
-// I dont think this works!!
+double mu3(double z1, double help, double mu2) // given mutot and mu2, can find mu3
+{}
+
+// code to find divergent line through 3d space of mu2, mu3, sigtot
+// help = 1, set z1, set mu2, start at 1 and work down? then from that find mu3?
+// find critical mu3 from critical condition, then can find sigtot?
+// cant really do much without having both mu2 and mu3
+
+void divergence(int grid1, int grid2)
+{
+	ofstream div; div.open("div23.txt");
+	double help = 1.0;
+	//for (int i = 0; i <= grid1; i++)
+	//{
+		mu(0) = 0.0;
+		//cout << i << endl;
+		//mu(0) = 5.0*(double)i/(double)grid1 - 4.0;
+		//mu(0) = -1.0;
+		
+		for (int j = 0; j <= grid2; j++)
+		{
+			double z1 = 100.0*(double)j/(double)grid2 - 50.0;
+			mu(1) = pow((z1*help/first(z1)) + mu(0), 2.0)/(4.0*k); // this is divergent condition
+			//if (!(sigtot(z1, help) >= 0.0)) break; // this one!
+			//if (i != 0 && j == 0) div << ",";
+			if (j != 0) div << ",";
+			div << mu(0) << "," << mu(1) << "," << z1 << "," << sigtot(z1, help) << "," << sqrt(2.0/3.0)*sigtot(z1, help)/q(z1, help) << "," << sigmap(z1, help, 2.0);
+			cout << mu(0) << "," << mu(1) << "," << z1 << "," << sigtot(z1, help) << "," << sqrt(2.0/3.0)*sigtot(z1, help)/q(z1, help) << "," << sigmap(z1, help, 2.0) << endl;
+		}
+	//}
+	div.close();
+}
+
+void critical(int grid1, int grid2)
+{
+	ofstream crit23; crit23.open("crit23.txt");
+	double help = 1.0;
+	for (int i = 0; i <= grid1; i++)
+	{
+		mu(0) = 6.0*(double)i/(double)grid1 - 4.0;
+		for (int j = 0; j <= grid2; j++)
+		{
+			mu(1) = 4.0*(double)j/(double)grid2 - 3.0;
+			crit23 << mu(0) << "," << mu(1) << "," << sigmap(z2c, help, 2.0) << "," << sigmap(z3c, help, 3.0);
+			if (j != grid2) crit23 << ",";
+		}
+		if (i != grid1) crit23 << ",";
+	}
+	crit23.close();
+}
+			
+
+
 
 void cycle(int grid1, int grid2)
 {
 	
 	double help = 1.0;
-
+	ofstream file; file.open("testing.txt");
 	for (int i = 0; i <= grid1; i++)
 	{
-		double z1 = ((double)i/(double)grid1) - 1.0;
-		//double z1 = -0.2;
+		double z1 = (1.5*(double)i/(double)grid1) - 1.0;
+		//double z1 = z3c;
 		
 		cout << "z1 " << z1 << endl;
-		cout << "phi " << phi(z1) << endl;
+		/*cout << "phi " << phi(z1) << endl;
 		cout << "first " << first(z1) << endl;
 		cout << "second " << second(z1) << endl;
 		cout << "X " << X(z1, help) << endl;
 		cout << "gamatot " << gamatot(z1, help) << endl;
 		cout << "M " << M(z1, help) << endl;
 		cout << "mutot " << mutot(M(z1, help)) << endl;
-		cout << "sistot " << sigtot(z1, help) << endl;
-		cout << "q " << q(z1, help) << endl << endl;
+		cout << "sigtot " << sigtot(z1, help) << endl;
+		cout << "q " << q(z1, help) << endl << endl;*/
 		
-		ofstream file; file.open("testing.txt");
 		
-		//sigma(0) = sig2_crit(z1, help);
+		
+		//if (abs(z1 - z2c) < pow(10.0, -10.0)) {sigma(0) = help/sqrt(second(z1)); sigma(1) = 0.0;}
+		//else if (abs(z1 - z3c) < pow(10.0, -10.0)) {sigma(0) = 0.0; sigma(1) = sig3(z1, help, sigma(0));}
+		//else {sigma(0) = sig2_crit(z1, help); sigma(1) = sig3(z1, help, sigma(0));}
+		
+		
+		
 		//sigma(1) = sqrt(2.0*(pow(sigtot(z1, help), 2.0) - (q(z1, help)*pow(sigma(0), 2.0)))/(3.0*pow(q(z1, help), 2.0)));
 		
-		//cout << sig2_crit(z1, help) << endl;
+		//cout << "sig2crit " << sigma(0) << endl;
+		//cout << "sig3crit " << sigma(1) << endl;
+		
 		double sig2crit;
-		if (phi(z1) == second(z1)) 
+		if (phi(z1) == second(z1)) {sigma(0) = help/sqrt(second(z1)); sigma(1) = 0.0;} // this will change for other parameters
+		else
+		{
+			sig2crit = sig2_crit(z1, help);
+			bool solution = (sig2crit >= 0.0);
+			if (solution) {sigma(0) = sig2crit; sigma(1) = sig3(z1, help, sigma(0));}
+			else cout << "no solution" << endl;
+		}
 		
+		cout << sigma(0) << ", " << sigma(1) << endl << endl;
 		
-		sig2crit = sig2_crit(z1, help);
-		bool solution = (sig2crit >= 0.0);
-		if (solution) cout << sig2crit << endl;
-		else cout << "no solution" << endl;
+		file << sigma(0) << "," << sigma(1);
+		if (i != grid1) file << ",";
+		
 		
 		
 		// now what are the gammas?
@@ -261,8 +340,9 @@ void cycle(int grid1, int grid2)
 		}
 		file.close();*/
 		
-		cin >> carryon;
+		//cin >> carryon;
 	}
+	file.close();
 }
 
 int main()
@@ -271,14 +351,22 @@ int main()
 	mu = ArrayXd::Zero(4);
 	sigma = ArrayXd::Zero(4);
 	k = 1.0;
+	z2c = crit_z1(2.0);
+	z3c = crit_z1(3.0);
+	cout << "z2c " << z2c << endl;
+	cout << "z3c " << z3c << endl;
+	
+	critical(1000, 1000);
 	
 	//mu(0) = -2.0;
 	//mu(1) = -2.0;
 	
-	//cycle(10, 10000);
+	//cycle(1000000, 10000);
 	
-	info = true;
-	cout << M(-0.0000001, 1.0) << endl;
+	//divergence(2, 10000);
+	
+	//info = true;
+	//cout << M(-0.0000001, 1.0) << endl;
 	
 	return 0;
 }

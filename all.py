@@ -47,10 +47,10 @@ meas = np.transpose(meas, (0, 1, 3, 2)) # mu, gam, meas, sig
 
 
 
-		
+
 for mi in range (1):
 
-	mi = 11
+	mi = 0
 	
 	plt.figure(mi + 1, figsize = (6, 12))
 	#plt.subplots(5, 1, figsize=(6,15))
@@ -68,8 +68,8 @@ for mi in range (1):
 		plt.semilogx(measfp[gi][0], measfp[gi][2], col[gi])
 		plt.semilogx(sigmaval, meas[mi][gi][0], colo[gi], label = "g = {0}".format(gammaval[gi]))             
 		plt.axvline(x = crit[gi][mi], linestyle = '--', color = col[gi])
-		plt.axvline(x = div[gi][0][mi], linestyle = ':', color = col[gi])
-		plt.axvline(x = div[gi][1][mi], linestyle = ':', color = col[gi])
+		#plt.axvline(x = div[gi][0][mi], linestyle = ':', color = col[gi])
+		#plt.axvline(x = div[gi][1][mi], linestyle = ':', color = col[gi])
 	plt.xlim([10**(-1.5), 10**0.5])
 	plt.ylabel("phi")
 	plt.title("mu = {0}".format(muval[mi]))
@@ -78,10 +78,10 @@ for mi in range (1):
 	for gi in range(6):
 		plt.semilogx(measfp[gi][0], measfp[gi][3], col[gi])
 		plt.semilogx(sigmaval, meas[mi][gi][1], colo[gi], label = "g = {0}".format(gammaval[gi]))
-		print(meas[mi][gi][1])
+		#print(meas[mi][gi][1])
 		plt.axvline(x = crit[gi][mi], linestyle = '--', color = col[gi])
-		plt.axvline(x = div[gi][0][mi], linestyle = ':', color = col[gi])
-		plt.axvline(x = div[gi][1][mi], linestyle = ':', color = col[gi])
+		#plt.axvline(x = div[gi][0][mi], linestyle = ':', color = col[gi])
+		#plt.axvline(x = div[gi][1][mi], linestyle = ':', color = col[gi])
 	plt.xlim([10**(-1.5), 10**0.5])
 	plt.ylim([0, 3])
 	plt.ylabel("M")
@@ -91,8 +91,8 @@ for mi in range (1):
 		plt.semilogx(measfp[gi][0], measfp[gi][3]*measfp[gi][3]/measfp[gi][4], col[gi], label = "gamma = {0}".format(gammaval[gi]))
 		plt.semilogx(sigmaval, meas[mi][gi][3], colo[gi])
 		plt.axvline(x = crit[gi][mi], linestyle = '--', color = col[gi])
-		plt.axvline(x = div[gi][0][mi], linestyle = ':', color = col[gi])
-		plt.axvline(x = div[gi][1][mi], linestyle = ':', color = col[gi])
+		#plt.axvline(x = div[gi][0][mi], linestyle = ':', color = col[gi])
+		#plt.axvline(x = div[gi][1][mi], linestyle = ':', color = col[gi])
 	plt.xlim([10**(-1.5), 10**0.5])
 	plt.xlabel("sigma")
 	plt.ylabel("diversity")
@@ -105,7 +105,7 @@ for mi in range (1):
 		plt.axvline(x = div[gi][0][mi], linestyle = ':', color = col[gi])
 		plt.axvline(x = div[gi][1][mi], linestyle = ':', color = col[gi])
 	plt.xlim([10**(-1.5), 10**0.5])
-	#plt.ylim([0, 10])
+	#plt.ylim([0, 100000000000])
 	plt.xlabel("sigma")
 	plt.ylabel("d squared")
 	
@@ -139,7 +139,7 @@ colour = np.transpose(colour, (1, 0, 2, 3)) # gam, mu, sig, colour
 
 for gi in range(1):
 	
-	gi = 0
+	gi = 4
 
 
 	
@@ -151,9 +151,9 @@ for gi in range(1):
 	#print (colour[gi].shape)
 	
 	#plt.scatter(muval, sigmaval, c=colour[gi], marker = 's', markersize = 5, markeredgewidth = 1, markeredgecolor = 'k')
-	plt.scatter(muval, crit[gi], marker = 'x', color = 'k')
-	plt.scatter(muval, div[gi][0], marker = '.', color = 'k')
-	plt.scatter(muval, div[gi][1], marker = '.', color = 'k')
+	#plt.scatter(muval, crit[gi], marker = 'x', color = 'k')
+	#plt.scatter(muval, div[gi][0], marker = '.', color = 'k')
+	#plt.scatter(muval, div[gi][1], marker = '.', color = 'k')
 	
 	for mi in range(12):
 		for si in range(21):
@@ -165,9 +165,10 @@ for gi in range(1):
 	plt.semilogy(z[0], z[1], col[gi])
 	
 	m = np.loadtxt("mu3_{0}.txt".format(gi), delimiter = ",")
-	m = m.reshape(len(m)/2, 2)
+	m = m.reshape(len(m)/3, 3)
 	m = np.transpose(m)
 	plt.semilogy(m[0], m[1], col[gi])
+	plt.semilogy(m[0], m[2], 'k')
 	
 	plt.axhline(y = 0, linestyle = '--', color = 'k')
 	plt.ylim([10**(-2), 10**1])
@@ -175,7 +176,7 @@ for gi in range(1):
 	plt.xlabel("mu")
 	plt.ylabel("sigma")
 	plt.savefig("bunin3_{0}.pdf".format(gi))
-
 """
+
 plt.show()
 

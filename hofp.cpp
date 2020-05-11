@@ -213,6 +213,48 @@ double crit_z1() // depends on p only
 	return z1;	
 }
 
+double maxsig_z1(double zstart) // returns the z1 where sigma reaches a stationary point, depends on mu and gamma
+{
+	ofstream ab; ab.open("abs.txt");
+	int grid = 1000000;
+	double small = pow(10.0, -6.0);
+
+	/*cout << "now plotting function for maxsig for mu = " << mu << " gamma = " << gama << endl;
+	
+	for (int i = 0; i <= grid; i++)
+	{
+		double z = 100.0*(double)i/(double)grid - 90.0;
+		double sigrad = (sigma(z + small) - sigma(z - small))/(2.0*small);
+		ab << z << "," << sigma(z) << "," << sigrad;
+		if (i != grid) {ab << ",";}
+	}
+	ab.close();
+	cout << "finished plotting z" << endl;*/
+	
+	double z1 = zstart;
+	//double small = pow(10.0, -6.0);
+	double y = (sigma(z1 + small) - sigma(z1 - small))/(2.0*small);
+	double grad;
+	//if (info == true) {cout << "z1 " << z1 << ", y " << y << endl;}
+	double ynew;
+	double znew;
+	while (abs(y) > 0.0)
+	{
+		grad = (sigma(z1 + small) + sigma(z1 - small) - (2.0*sigma(z1)))/(small*small);
+		if (grad == 0.0) break;
+		//if (info == true) {cout << "small " << small << " grad " << grad << endl;}
+		znew = z1 - (y/grad);
+		ynew = (sigma(znew + small) - sigma(znew - small))/(2.0*small);
+		if (abs(ynew) >= abs(y) && ((ynew*y) > 0.0 || abs(y) < pow(10.0, -5.0))) break;
+		y = ynew;
+		z1 = znew;
+		//if (info == true) {cout << "z1 " << z1 << ", y " << y << endl;}
+		if (small > pow(10.0, -10.0)) small /= 10.0;
+	}
+	return z1;	
+}
+	
+
 double div3_z1(double zstart) //I dont know about this!!!
 {
 	/*ofstream zz; zz.open("zz.txt");
@@ -474,22 +516,27 @@ void bunin3(int grid, int gi)
 {
 	gama = gammaval[gi];
 	double z1 = crit_z1();
+	double zstart = 0.0;
+	double zstop;
 	
 	ofstream fil; fil.open("mu3_" + to_string(gi) + ".txt");
 	for (int i = 0; i <= grid; i++)
 	{
 		mu = (4.0*(double)i/(double)grid) - 3.0;
 		if (i != 0) fil << ",";
-		fil << mu << "," << sigma(z1);
-		//cout << mu << ", " << sigma(crit_z1()) << endl;
+		zstart = maxsig_z1(zstart);
+		fil << mu << "," << sigma(z1) << "," << sigma(zstart); // critical line and maxsig line
+		cout << "mu = " << mu << ", zstart = " << zstart << ", sigma = " << sigma(zstart) << endl;
+		if (sigma(zstart) > 0.0) zstop = zstart;
 	}
 	fil.close();
 	
 	ofstream file; file.open("bunin3_" + to_string(gi) + ".txt");
 	vector<ArrayXd> muz;
+	double critz1 = crit_z1();
 	for (int i = 0; i <= grid; i++)
 	{
-		z1 = 100.0*(double)i/(double)grid - 50.0;
+		z1 = (50.0 + max(critz1, zstop))*(double)i/(double)grid - 50.0;
 		mu = mud3(z1);
 		if (!(sigma(z1) >= 0.0)) break; // this one!
 		if (i != 0) file << ",";
@@ -518,22 +565,6 @@ void bunin3(int grid, int gi)
 		ofstream zz; zz.open("zz.txt");
 		ofstream ab; ab.open("abs.txt");
 	
-/*
-		cout << "now plotting function for zdiv" << endl;
-	
-		for (int i = 0; i <= grid; i++)
-		{
-			double z = 100.0*(double)i/(double)grid - 50.0;
-			zz << z;
-			//if (abs(z - zlow) < 0.1) cout << "z = " << z << ", mud3(z) = " << mud3(z) << ", mu = " << mu << ", sigma = " << sigma(z) << endl;
-			//if (abs(z - zhigh) < 0.1) cout << "z = " << z << ", mud3(z) = " << mud3(z) << ", mu = " << mu << ", sigma = " << sigma(z) << endl;
-			ab << mud3(z) - mu << "," << sigma(z);
-			if (i != grid) {zz << ", "; ab << ", ";}
-		}
-		zz.close(); ab.close();
-		
-		cout << "finished" << endl;
-*/		
 		if (abs(mud3(zlow) - mu) < 0.001) {fild << sigma(zlow); cout << "sigmalow = " << sigma(zlow) << endl;}
 		else fild << 1.0/0.0;
 		fild << ",";
@@ -636,9 +667,9 @@ void testing(int grids)
 int main()
 {
 	int grids = 400000; //400000; // for graphs with varying sigma
-	p = 3.0;
-	gama = 0.0;
-	mu = -1.0;
+	p = 2.0;
+	//gama = -0.0;
+	mu = 0.0;
 	k = 1.0;
 	
 	muval = vector<double>{-0.25, -0.05, 0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.6, 1.0};
@@ -647,11 +678,16 @@ int main()
 	for (int i = 0; i <= 20; i++) sigmaval[i] = pow(10.0, (0.1*(double)i) - 1.5);
 	
 	//for (int mi = 0; mi < 12; mi++) fiveplot3(grids, mi);
-	for (int gi = 0; gi < 6; gi++) bunin3(1000000, gi);
+	//for (int gi = 0; gi < 6; gi++) bunin3(1000000, gi);
+	
+	//bunin3(500000, 4);
+	
+	fiveplot(100000);
+
 	
 	//div3_z1(0.0);
 	
-	//fiveplot3(grids);
+	
 	
 	//phase(grids);
 	

@@ -545,7 +545,7 @@ void testplot(int v1, int v2, int v3)
 
 void Nplot(int v1, int v2, int v3, int v4)
 {
-	ofstream Nfile; fivefile.open("five3_" + to_string(v1) + "_" + to_string(v2) + "_" + to_string(v3) + "_" + to_string(v4) + ".txt");
+	ofstream Nfile; Nfile.open("N3_" + to_string(v1) + "_" + to_string(v2) + "_" + to_string(v3) + "_" + to_string(v4) + ".txt");
 	
 	mu(p-2) = muval[v1];
 	gama(p-2) = gammaval[v2];
