@@ -317,8 +317,11 @@ void bunin3(int grid, int gi)
 		mu = (4.0*(double)i/(double)grid) - 3.0;
 		if (i != 0) fil << ",";
 		zstart = maxsig_z1(zstart);
+		if (zstart < z1)
+		fil << mu << "," << 1.0/0.0 << "," << sigma(zstart); // no crit and maxsig line
+		else
 		fil << mu << "," << sigma(z1) << "," << sigma(zstart); // critical line and maxsig line
-		cout << "mu = " << mu << ", zstart = " << zstart << ", sigma = " << sigma(zstart) << endl;
+		cout << "gamma = " << gama << ", mu = " << mu << ", zstart = " << zstart << ", zcrit = " << z1 << endl;
 		if (sigma(zstart) > 0.0) zstop = zstart;
 	}
 	fil.close();
@@ -328,7 +331,7 @@ void bunin3(int grid, int gi)
 	double critz1 = crit_z1();
 	for (int i = 0; i <= grid; i++)
 	{
-		z1 = (50.0 + min(critz1, zstop))*(double)i/(double)grid - 50.0;
+		z1 = (50.0 + zstop)*(double)i/(double)grid - 50.0;
 		mu = mud3(z1);
 		if (!(sigma(z1) >= 0.0)) break; // this one!
 		if (i != 0) file << ",";
@@ -401,7 +404,8 @@ int main()
 	for (int i = 0; i <= 20; i++) sigmaval[i] = pow(10.0, (0.1*(double)i) - 1.5);
 	
 	//for (int mi = 0; mi < 12; mi++) fiveplot3(grids, mi);
-	for (int gi = 0; gi < 6; gi++) bunin3(1000000, gi);
+	//for (int gi = 0; gi < 6; gi++) bunin3(1000000, gi);
+	bunin3(1000000, 4);
 
 	
 	return 0;
