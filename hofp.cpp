@@ -1,4 +1,3 @@
-
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -261,7 +260,6 @@ double div3_z1(double zstart) //I dont know about this!!!
 	ofstream ab; ab.open("abs.txt");
 	
 	int grid = 1000000;
-
 	cout << "now plotting function for zdiv for mu = " << mu << endl;
 	
 	for (int i = 0; i <= grid; i++)
@@ -526,7 +524,7 @@ void bunin3(int grid, int gi)
 		if (i != 0) fil << ",";
 		zstart = maxsig_z1(zstart);
 		fil << mu << "," << sigma(z1) << "," << sigma(zstart); // critical line and maxsig line
-		cout << "mu = " << mu << ", zstart = " << zstart << ", sigma = " << sigma(zstart) << endl;
+		//cout << "mu = " << mu << ", zstart = " << zstart << ", sigma = " << sigma(zstart) << endl;
 		if (sigma(zstart) > 0.0) zstop = zstart;
 	}
 	fil.close();
@@ -538,10 +536,11 @@ void bunin3(int grid, int gi)
 	{
 		z1 = (50.0 + max(critz1, zstop))*(double)i/(double)grid - 50.0;
 		mu = mud3(z1);
+		cout << z1 << ", " << mu << "," << sigma(crit_z1()) << "," << sigma(z1) << endl;
 		if (!(sigma(z1) >= 0.0)) break; // this one!
 		if (i != 0) file << ",";
 		file << mu << "," << sigma(z1);
-		//cout << z1 << ", " << mu << "," << sigma(crit_z1()) << "," << sigma(z1) << endl;
+		
 	}
 	file.close();
 	
@@ -597,16 +596,13 @@ void fiveplot(int grid)
 		
 		string filename = "Tmeasfp_" + to_string((int)p) + "_" + to_string((int)(10*mu)) + "_" + to_string(gi) + ".txt";
 		ofstream file; file.open(filename);
-
 		gama = ((p - 2.0)*gi*gi/(2.0*(p - 1.0))) + ((4.0 - p)*gi/(2.0*(p - 1.0))) -1.0/(p - 1.0);
 		cout << gama << endl;
 		critfile << sigma(zcrit); // critical sigma
-
 		vector<ArrayXd> sigmat;
 		double start = -40.0;
 		double end = 40.0;
 		double range = end - start;
-
 		for (int i = 0; i <= grid; i++)
 		{
 			double z1 = 20.0*(double)i/(double)grid - 10.0; //(k - mu)/(((double)i*range/(double)grid) + start); // where did i get this from?
@@ -616,7 +612,6 @@ void fiveplot(int grid)
 			//if (!(abs(sigma(z1)) >= 0.0)) continue; //{cout << "bad solution 4 " << z1 << endl; continue;}
 			//if (sigma(z1) > 10.0 || sigma(z1) < 0.1) continue;
 			//if (sig(z1, z2) == 0.0) continue; // this is for histograms only
-
 			ArrayXd entry = ArrayXd::Zero(6); // sigma, z1, phi, M, q, help
 			entry(0) = sigma(z1);
 			entry(1) = z1;
@@ -630,7 +625,6 @@ void fiveplot(int grid)
 			//info = true;
 		}
 		sort(sigmat.begin(), sigmat.end(), compare);
-
 		cout << gi << " " << sigmat.size() << " sorted!" << endl;
 	
 		for (int i = 0; i < sigmat.size(); i++)
@@ -667,7 +661,7 @@ void testing(int grids)
 int main()
 {
 	int grids = 400000; //400000; // for graphs with varying sigma
-	p = 2.0;
+	p = 3.0;
 	//gama = -0.0;
 	mu = 0.0;
 	k = 1.0;
@@ -680,9 +674,9 @@ int main()
 	//for (int mi = 0; mi < 12; mi++) fiveplot3(grids, mi);
 	//for (int gi = 0; gi < 6; gi++) bunin3(1000000, gi);
 	
-	//bunin3(500000, 4);
+	bunin3(500000, 1);
 	
-	fiveplot(100000);
+	//fiveplot(100000);
 
 	
 	//div3_z1(0.0);
@@ -758,7 +752,3 @@ int main()
 	return 0;
 }
 */
-
-
-
-

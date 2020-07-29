@@ -66,84 +66,23 @@ double first(double z1)
 
 
 
-double Mgrad(double z1, double MM, double small)
-{
-	double Mcoeff = help(z1)*z1/first(z1); // may be better because doesnt rely on other parameters
-	double grad = (Mcoeff*(MM + small)) + (mu*pow((MM + small), p - 1.0)) + k;
-	cout << "grad1 " << grad << endl;
-	grad -= (Mcoeff*(MM - small)) + (mu*pow((MM - small), p - 1.0)) + k;
-	cout << "grad2 " << grad << endl;
-	return grad/(2.0*small);
-}
-
-double M(double Mstart, double z1) //this is a solution to a p-order polynomial, so will probably do newton-raphson?
-{
-	double Mcoeff = help(z1)*z1/first(z1); // may be better because doesnt rely on other parameters
-	double MM = Mstart; // maybe we dont need this? I think this should be set to k
-	
-	if (info == true)
+double M(double z1) //this is a solution to a p-order polynomial, so will probably do newton-raphson?
+{	
+	if (mu == 0.0) return -k*first(z1)/(z1*help(z1));
+	else
 	{
-	ofstream mm; mm.open("zz.txt");
-	ofstream ab; ab.open("abs.txt");
+		//if (pow(z1*help(z1)/first(z1), 2.0) < 4.0*mu*k) return 1.0/0.0;
+		//cout << "(z1*help(z1)/first(z1)) " << (z1*help(z1)/first(z1)) << endl;
+		//cout << "sqrt(pow(z1*help(z1)/first(z1), 2.0) - (4.0*mu*k)))/(-2.0*mu) " << sqrt(pow(z1*help(z1)/first(z1), 2.0) - (4.0*mu*k))/(-2.0*mu) << endl;
+		return ((z1*help(z1)/first(z1)) + sqrt(pow(z1*help(z1)/first(z1), 2.0) - (4.0*mu*k)))/(-2.0*mu);
+	}
 
-	cout << "now plotting function for M for z1 = " << z1 << endl;
-	
-	for (int i = 0; i <= 400000; i++)
-	{
-		double m = (0.1*(double)i);
-		mm << m;
-		ab << (Mcoeff*m) + (mu*pow(m, p - 1.0)) + k;
-		if (i != 400000) {mm << ", "; ab << ", ";}
-	}
-	mm.close(); ab.close();
-	cout << "finished plotting M" << endl;
-	}
-	
-	if (p == 2.0) return -k/((z1*help(z1)/first(z1)) + mu); // this could give -infinity
-	if (p == 3.0)
-	{
-		if (mu == 0.0) return -k*first(z1)/(z1*help(z1));
-		else
-		{
-			//if (pow(z1*help(z1)/first(z1), 2.0) < 4.0*mu*k) return 1.0/0.0;
-			return ((z1*help(z1)/first(z1)) + sqrt(pow(z1*help(z1)/first(z1), 2.0) - (4.0*mu*k)))/(-2.0*mu);
-		}
-	}
-	
-
-	double small = pow(10.0, -6.0); // dont know about this?
-	double y = (Mcoeff*MM) + (mu*pow(MM, p - 1.0)) + k;
-	double grad;
-	//if (info == true) {cout << "MM " << MM << ", y " << y << endl;}
-	double ynew;
-	double Mnew;
-	while (abs(y) > 0.0)
-	{
-		if (info == true) {cout << "MM " << MM << ", y " << y << endl;}
-		grad = Mgrad(z1, MM, small);
-		if (grad == 0.0) {cout << "grad = 0" << endl; if (abs(y) < pow(10.0, -5.0)) return MM; else return 1.0/0.0;}
-		//if (info == true) {cout << "small " << small << " grad " << grad << endl;}
-		Mnew = MM - (y/grad);
-		// if (z1 + zz < 0.0) cout << "badd" << endl;
-		ynew = (Mcoeff*Mnew) + (mu*pow(Mnew, p - 1.0)) + k;
-		if (abs(ynew) >= abs(y) && abs(y) < pow(10.0, -5.0)) break;
-		if (abs(ynew) >= abs(y) && y*ynew > 0.0) return 1.0/0.0;
-		y = ynew;
-		MM = Mnew;
-		//if (info == true) {cout << "z1 " << z1 << ", y " << y << endl;}
-		if (small > pow(10.0, -9.0)) small /= 10.0;
-		cout << "small " << small << endl;
-	}
-	
-	//if (!(abs(sigma(z1, z2)) >= 0.0  && abs(gamma(z1, z2)) >= 0.0)) // found the wrong solution
-
-	return MM;
 }
 
 
 double sigtot(double z1)
 {
-	return help(z1)*M(k, z1)/first(z1);
+	return help(z1)*M(z1)/first(z1);
 }
 
 double q(double z1)
@@ -151,7 +90,7 @@ double q(double z1)
 	//if (z1 == 1.0/0.0) return pow(M(k, z1), 2.0);
 	//if (z1 == 0.0) cout << "z1 = 0 in q function!! :(" << endl;
 	//return second(z1)*pow(X(z1)*melp(z1)/(z1*phi(z1)), 2.0);
-	return second(z1)*pow(M(k, z1)/first(z1), 2.0);
+	return second(z1)*pow(M(z1)/first(z1), 2.0);
 }
 
 double sigma(double z1)
@@ -159,9 +98,11 @@ double sigma(double z1)
 	//if (z1 == 1.0/0.0) return 0;
 	//return sqrt(2.0/(p*pow(q(z1), p - 1.0)))*sigtot(z1);
 	//return sqrt(2.0/(second(z1)*p*pow(q(z1), p - 2.0)))*help(z1);
+	//cout << "help " << help << endl;
+	//cout << "sqrt " << sqrt(2.0/(p*pow(second(z1), p - 1.0))) << endl;
+	//cout << "pow " << pow(first(z1)/M(k, z1), p - 2.0) << endl;
 	
-	
-	return help(z1)*sqrt(2.0/(p*pow(second(z1), p - 1.0)))*pow(first(z1)/M(k, z1), p - 2.0); // this one!
+	return help(z1)*sqrt(2.0/(p*pow(second(z1), p - 1.0)))*pow(first(z1)/M(z1), p - 2.0); // this one!
 	//return help(z1)*sqrt(2.0/(p*pow(second(z1), p - 1.0)));
 }
 
@@ -253,9 +194,6 @@ void fiveplot3(int grid, int mi)
 {
 	mu = muval[mi];
 	
-	string critstr = "crit3_" + to_string(mi) + ".txt";
-	ofstream critfile; critfile.open(critstr);
-	
 	double zcrit = crit_z1();
 	//cout << "crit " << zcrit << endl;
 	
@@ -267,9 +205,7 @@ void fiveplot3(int grid, int mi)
 		ofstream file; file.open(filename);
 
 		gama = gammaval[gi];
-		critfile << sigma(zcrit); // critical sigma
 	
-		double Mstart = k;
 		double sig_prev = -1.0; // next sigma has to be bigger than previous
 
 		for (int i = 0; i <= grid; i++)
@@ -277,16 +213,14 @@ void fiveplot3(int grid, int mi)
 			double z1 = ((double)i*100.0/(double)grid) - 50.0;
 			if (sigma(z1) < 0.0) continue; //{cout << "bad solution 3 " << z1 << endl; continue;}
 			//if (!(abs(sigma(z1)) >= 0.0)) continue; //{cout << "bad solution 4 " << z1 << endl; continue;}
-			//if (sigma(z1) < sig_prev) break; // this one!
+			if (sigma(z1) < sig_prev) break; // this one!
 			sig_prev = sigma(z1);
 			if (i != 0) file << ",";
 			//cout << "i " << i << ", z1 " << z1 << ", phi " << phi(z1) << ", M " << entry(3) << ", sig " << sigma(z1) << ", q " << q(z1) << endl;
-			file << sigma(z1) << "," << z1 << "," << phi(z1) << "," << M(0.0, z1) << "," << q(z1) << "," << help(z1);
+			file << sigma(z1) << "," << z1 << "," << phi(z1) << "," << M(z1) << "," << q(z1) << "," << help(z1);
 		}
 		file.close();
-		if (gi != 5) critfile << ",";
 	}
-	critfile.close();
 }
 
 void phase(int grid) // for gamma against sigma
@@ -307,71 +241,64 @@ void phase(int grid) // for gamma against sigma
 void bunin3(int grid, int gi)
 {
 	gama = gammaval[gi];
-	double z1 = crit_z1();
+	double critz1 = crit_z1();
 	double zstart = 0.0;
 	double zstop;
+	
+	ofstream points; points.open("points3_" + to_string(gi) + ".txt");
 	
 	ofstream fil; fil.open("mu3_" + to_string(gi) + ".txt");
 	for (int i = 0; i <= grid; i++)
 	{
+		//cout << "i " << i << endl;
 		mu = (4.0*(double)i/(double)grid) - 3.0;
+		//cout << mu << endl;
 		if (i != 0) fil << ",";
 		zstart = maxsig_z1(zstart);
-		if (zstart < z1)
-		fil << mu << "," << 1.0/0.0 << "," << sigma(zstart); // no crit and maxsig line
-		else
-		fil << mu << "," << sigma(z1) << "," << sigma(zstart); // critical line and maxsig line
-		cout << "gamma = " << gama << ", mu = " << mu << ", zstart = " << zstart << ", zcrit = " << z1 << endl;
+		if (zstart < critz1) fil << mu << "," << 1.0/0.0 << "," << sigma(zstart); // no crit and maxsig line
+		else fil << mu << "," << sigma(critz1) << "," << sigma(zstart); // critical line and maxsig line
+		//cout << "mu = " << mu << ", zstart = " << zstart << ", maxsig = " << sigma(zstart) << ", sigc = " << sigma(z1) << endl;
+		for (int mi = 0; mi < 12; mi ++)
+		{
+			//if (abs(mu - muval[mi]) < pow(10.0, -15.0)) cout << mu << ", " << abs(mu - muval[mi]) << endl;
+			if (abs(mu - muval[mi]) < pow(10.0, -15.0))
+			{
+				//cout << mu << endl;
+				if (zstart < critz1) points << 1.0/0.0 << "," << sigma(zstart) << ",";
+				else points << sigma(critz1) << "," << sigma(zstart) << ",";
+				double zlow;
+				for (int i = 0; i <= grid; i++)
+				{
+					double z1 = 100.0*(double)i/(double)grid - 50.0;
+					if (sigma(z1) > 0.0 && sigma(z1) < 1.0/0.0) {zlow = z1; break;}
+				}
+				if (abs(mud3(zlow) - mu) < 0.001) points << sigma(zlow);
+				else points << 1.0/0.0;
+				if (mi != 11) points << ",";
+			}
+		}
+				
 		if (sigma(zstart) > 0.0) zstop = zstart;
+		//cout << "sig(zstop) = " << sigma(zstop) << endl;
 	}
 	fil.close();
-
+	points.close();
+	//cout << "zstop = " << zstop << endl;
 	ofstream file; file.open("bunin3_" + to_string(gi) + ".txt");
-	vector<ArrayXd> muz;
-	double critz1 = crit_z1();
 	for (int i = 0; i <= grid; i++)
 	{
-		z1 = (50.0 + zstop)*(double)i/(double)grid - 50.0;
+		double z1 = (50.0 + zstop)*(double)i/(double)grid - 50.0;
 		mu = mud3(z1);
-		if (!(sigma(z1) >= 0.0)) break; // this one!
+		double MM = (z1*help(z1)/first(z1))/(-2.0*mu);
+		double sigmaa = help(z1)*sqrt(2.0/(3.0*pow(second(z1), 2.0)))*first(z1)/MM;
+		if (!(sigmaa >= 0.0)) break; // this one!
 		if (i != 0) file << ",";
-		file << mu << "," << sigma(z1);
+		file << mu << "," << sigmaa;
 		//cout << z1 << ", " << mu << "," << sigma(crit_z1()) << "," << sigma(z1) << endl;
 	}
 	file.close();
-	
-	ofstream fild; fild.open("div3_" + to_string(gi) + ".txt");
-	for (int mi = 0; mi < 12; mi ++)
-	{
-		mu = muval[mi];
-		double zlow = 1.0;
-		double zhigh = 1.0;
-		for (int i = 0; i <= grid; i++)
-		{
-			z1 = 100.0*(double)i/(double)grid - 50.0;
-			if (sigma(z1) > 0 && sigma(z1) < 1.0/0.0)
-			{
-				if (zlow == 1.0 || zhigh == 1.0) {zlow = z1; zhigh = z1;}
-				else zhigh = z1; //cout << "zhigh = " << zhigh << ", sigma = " << sigma(zhigh) << endl;}
-				// the plot of sigma is dashy, so could put a break in here if sigma is not positive?
-			}
-		}
-		//cout << "gamma = " << gama << ", mu = " << mu << ", zlow = " << zlow << ", mud3(zlow) = " << mud3(zlow) << ", zhigh = " << zhigh << ", mud3(zhigh) = " << mud3(zhigh) << endl;
-		ofstream zz; zz.open("zz.txt");
-		ofstream ab; ab.open("abs.txt");
-	
-		if (abs(mud3(zlow) - mu) < 0.001) {fild << sigma(zlow); cout << "sigmalow = " << sigma(zlow) << endl;}
-		else fild << 1.0/0.0;
-		fild << ",";
-		if (abs(mud3(zhigh) - mu) < 0.001) {fild << sigma(zhigh); cout << "sigmahigh = " << sigma(zhigh) << endl;}
-		else fild << 1.0/0.0;
-		if (mi != 11) fild << ",";
-		
-		//string inn;
-		//cin >> inn;
-	}
-	fild.close();
 }
+
 
 void testing(int grids)
 {
@@ -403,9 +330,10 @@ int main()
 	sigmaval = vector<double>(21);
 	for (int i = 0; i <= 20; i++) sigmaval[i] = pow(10.0, (0.1*(double)i) - 1.5);
 	
-	//for (int mi = 0; mi < 12; mi++) fiveplot3(grids, mi);
+	for (int mi = 0; mi < 12; mi++) fiveplot3(grids, mi);
 	//for (int gi = 0; gi < 6; gi++) bunin3(1000000, gi);
-	bunin3(1000000, 4);
+	//bunin3(10000, 1);
+	
 
 	
 	return 0;

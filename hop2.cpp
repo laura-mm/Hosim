@@ -65,85 +65,16 @@ double first(double z1)
 // this is the first order integral, this can not be zero
 
 
-
-double Mgrad(double z1, double MM, double small)
+double M(double z1) //this is a solution to a p-order polynomial, so will probably do newton-raphson?
 {
-	double Mcoeff = help(z1)*z1/first(z1); // may be better because doesnt rely on other parameters
-	double grad = (Mcoeff*(MM + small)) + (mu*pow((MM + small), p - 1.0)) + k;
-	cout << "grad1 " << grad << endl;
-	grad -= (Mcoeff*(MM - small)) + (mu*pow((MM - small), p - 1.0)) + k;
-	cout << "grad2 " << grad << endl;
-	return grad/(2.0*small);
-}
+	return -k/((z1*help(z1)/first(z1)) + mu); // this could give -infinity
 
-double M(double Mstart, double z1) //this is a solution to a p-order polynomial, so will probably do newton-raphson?
-{
-	double Mcoeff = help(z1)*z1/first(z1); // may be better because doesnt rely on other parameters
-	double MM = Mstart; // maybe we dont need this? I think this should be set to k
-	
-	if (info == true)
-	{
-	ofstream mm; mm.open("zz.txt");
-	ofstream ab; ab.open("abs.txt");
-
-	cout << "now plotting function for M for z1 = " << z1 << endl;
-	
-	for (int i = 0; i <= 400000; i++)
-	{
-		double m = (0.1*(double)i);
-		mm << m;
-		ab << (Mcoeff*m) + (mu*pow(m, p - 1.0)) + k;
-		if (i != 400000) {mm << ", "; ab << ", ";}
-	}
-	mm.close(); ab.close();
-	cout << "finished plotting M" << endl;
-	}
-	
-	if (p == 2.0) return -k/((z1*help(z1)/first(z1)) + mu); // this could give -infinity
-	if (p == 3.0)
-	{
-		if (mu == 0.0) return -k*first(z1)/(z1*help(z1));
-		else
-		{
-			//if (pow(z1*help(z1)/first(z1), 2.0) < 4.0*mu*k) return 1.0/0.0;
-			return ((z1*help(z1)/first(z1)) + sqrt(pow(z1*help(z1)/first(z1), 2.0) - (4.0*mu*k)))/(-2.0*mu);
-		}
-	}
-	
-
-	double small = pow(10.0, -6.0); // dont know about this?
-	double y = (Mcoeff*MM) + (mu*pow(MM, p - 1.0)) + k;
-	double grad;
-	//if (info == true) {cout << "MM " << MM << ", y " << y << endl;}
-	double ynew;
-	double Mnew;
-	while (abs(y) > 0.0)
-	{
-		if (info == true) {cout << "MM " << MM << ", y " << y << endl;}
-		grad = Mgrad(z1, MM, small);
-		if (grad == 0.0) {cout << "grad = 0" << endl; if (abs(y) < pow(10.0, -5.0)) return MM; else return 1.0/0.0;}
-		//if (info == true) {cout << "small " << small << " grad " << grad << endl;}
-		Mnew = MM - (y/grad);
-		// if (z1 + zz < 0.0) cout << "badd" << endl;
-		ynew = (Mcoeff*Mnew) + (mu*pow(Mnew, p - 1.0)) + k;
-		if (abs(ynew) >= abs(y) && abs(y) < pow(10.0, -5.0)) break;
-		if (abs(ynew) >= abs(y) && y*ynew > 0.0) return 1.0/0.0;
-		y = ynew;
-		MM = Mnew;
-		//if (info == true) {cout << "z1 " << z1 << ", y " << y << endl;}
-		if (small > pow(10.0, -9.0)) small /= 10.0;
-		cout << "small " << small << endl;
-	}
-	
-	//if (!(abs(sigma(z1, z2)) >= 0.0  && abs(gamma(z1, z2)) >= 0.0)) // found the wrong solution
-
-	return MM;
 }
 
 
 double sigtot(double z1)
 {
-	return help(z1)*M(k, z1)/first(z1);
+	return help(z1)*M(z1)/first(z1);
 }
 
 double q(double z1)
@@ -151,7 +82,7 @@ double q(double z1)
 	//if (z1 == 1.0/0.0) return pow(M(k, z1), 2.0);
 	//if (z1 == 0.0) cout << "z1 = 0 in q function!! :(" << endl;
 	//return second(z1)*pow(X(z1)*melp(z1)/(z1*phi(z1)), 2.0);
-	return second(z1)*pow(M(k, z1)/first(z1), 2.0);
+	return second(z1)*pow(M(z1)/first(z1), 2.0);
 }
 
 double sigma(double z1)
@@ -161,7 +92,7 @@ double sigma(double z1)
 	//return sqrt(2.0/(second(z1)*p*pow(q(z1), p - 2.0)))*help(z1);
 	
 	
-	return help(z1)*sqrt(2.0/(p*pow(second(z1), p - 1.0)))*pow(first(z1)/M(k, z1), p - 2.0); // this one!
+	return help(z1)*sqrt(2.0/(p*pow(second(z1), p - 1.0)))*pow(first(z1)/M(z1), p - 2.0); // this one!
 	//return help(z1)*sqrt(2.0/(p*pow(second(z1), p - 1.0)));
 }
 
@@ -202,9 +133,8 @@ double crit_z1() // depends on p only
 
 double div2_z1() // for p = 2, depends on mu
 {
-	/*if (info == true)
+	if (info == true)
 	{
-	ofstream zz; zz.open("zz.txt");
 	ofstream ab; ab.open("abs.txt");
 
 	cout << "now plotting function for zdiv for mu = " << mu << endl;
@@ -212,15 +142,13 @@ double div2_z1() // for p = 2, depends on mu
 	for (int i = 0; i <= 400000; i++)
 	{
 		double z = (10.0*(double)i/400000.0) - 5.0;
-		zz << z;
-		ab << z*help(z)/first(z) + mu;
-		if (i != 400000) {zz << ", "; ab << ", ";}
+		ab << z << "," << z*help(z)/first(z) + mu;
+		if (i != 400000) {ab << ", ";}
 	}
-	zz.close(); ab.close();
+	ab.close();
 	cout << "finished plotting z" << endl;
 	}
 	
-	if (mu == 1.0) return -1.0/0.0;*/
 	
 	double z1 = 0.0;
 	double small = pow(10.0, -6.0);
@@ -242,13 +170,13 @@ double div2_z1() // for p = 2, depends on mu
 		ynew = znew*help(znew)/first(znew) + mu;
 		if (info == true) {cout << "znew " << znew << ", ynew " << ynew << endl;}
 		//cout << "abs(ynew) " << abs(ynew) << ", abs(y) " << abs(y) << endl;
-		if (abs(ynew) >= abs(y) && ((ynew*y) > 0.0 || abs(y) < pow(10.0, -5.0))) break;
+		if (abs(ynew) >= abs(y) && ((ynew*y) > 0.0 || abs(y) < pow(10.0, -5.0))) break; //{cout << "thisun" << endl; break;}
 		y = ynew;
 		z1 = znew;
 		if (small > pow(10.0, -10.0)) small /= 10.0;
 	}
-	
-	return z1;
+	if (gama == -0.5 && mu == 1.5) return -1.0/0.0;
+	else return z1;
 }
 	
 
@@ -256,9 +184,7 @@ double div2_z1() // for p = 2, depends on mu
 void fiveplot2(int grid, int mi)
 {
 	mu = muval[mi];
-	
-	string critstr = "crit2_" + to_string(mi) + ".txt";
-	ofstream critfile; critfile.open(critstr);
+
 	
 	double zcrit = crit_z1();
 	//cout << "crit " << zcrit << endl;
@@ -271,9 +197,7 @@ void fiveplot2(int grid, int mi)
 		ofstream file; file.open(filename);
 
 		gama = gammaval[gi];
-		critfile << sigma(zcrit); // critical sigma
 	
-		double Mstart = k;
 
 		for (int i = 0; i <= grid; i++)
 		{
@@ -281,12 +205,11 @@ void fiveplot2(int grid, int mi)
 			if (sigma(z1) < 0.0) continue; //{cout << "bad solution 3 " << z1 << endl; continue;}
 			if (i != 0) file << ",";
 			//cout << "i " << i << ", z1 " << z1 << ", phi " << phi(z1) << ", M " << entry(3) << ", sig " << sigma(z1) << ", q " << q(z1) << endl;
-			file << sigma(z1) << "," << z1 << "," << phi(z1) << "," << M(0.0, z1) << "," << q(z1) << "," << help(z1);
+			if (M(z1) >= 0.0) file << sigma(z1) << "," << z1 << "," << phi(z1) << "," << M(z1) << "," << q(z1) << "," << help(z1);
+			else file << sigma(z1) << "," << z1 << "," << phi(z1) << "," << 1.0/0.0 << "," << q(z1) << "," << help(z1);
 		}
 		file.close();
-		if (gi != 5) critfile << ",";
 	}
-	critfile.close();
 }
 
 
@@ -296,25 +219,23 @@ void fiveplot2(int grid, int mi)
 void bunin2(int grid, int gi)
 {
 	gama = gammaval[gi];
-	double z1 = crit_z1();
-	double critstop = mud2(z1);
+	double critz1 = crit_z1();
+	double critstop = mud2(critz1);
 	
 	ofstream fil; fil.open("mu2_" + to_string(gi) + ".txt");
 	for (int i = 0; i <= grid; i++)
 	{
-		mu = ((min(critstop, 2.0) + 4.0)*(double)i/(double)grid) - 4.0;
+		mu = ((min(critstop, 2.0) + 5.0)*(double)i/(double)grid) - 5.0;
 		if (i != 0) fil << ",";
-		fil << mu << "," << sigma(z1); // critical line
+		fil << mu << "," << sigma(critz1); // critical line
 		//cout << "mu = " << mu << ", zstart = " << zstart << ", sigma = " << sigma(zstart) << endl;
 	}
 	fil.close();
 	
 	ofstream file; file.open("bunin2_" + to_string(gi) + ".txt");
-	vector<ArrayXd> muz;
-	double critz1 = crit_z1();
 	for (int i = 0; i <= grid; i++)
 	{
-		z1 = 100.0*(double)i/(double)grid - 50.0;
+		double z1 = 100.0*(double)i/(double)grid - 50.0;
 		mu = mud2(z1);
 		if (!(sigma(z1) >= 0.0)) break; // this one!
 		if (i != 0) file << ",";
@@ -323,15 +244,27 @@ void bunin2(int grid, int gi)
 	}
 	file.close();
 	
-	ofstream fild; fild.open("div2_" + to_string(gi) + ".txt");
+	ofstream points; points.open("points2_" + to_string(gi) + ".txt");
 	for (int mi = 0; mi < 12; mi ++)
 	{
+		//if (mi == 11) info = true;
 		mu = muval[mi];
-		fild << sigma(div2_z1());
-		if (mi != 11) fild << ",";
+		if (mu <= critstop) points << sigma(critz1) << "," << sigma(div2_z1()) << ",";
+		else points << 1.0/0.0 << "," << sigma(div2_z1()) << ",";
+		double zlow;
+		for (int i = 0; i <= grid; i++)
+		{
+			double z1 = 100.0*(double)i/(double)grid - 50.0;
+			if (M(z1) > 0.0 && M(z1) < 1.0/0.0) {zlow = z1; break;}
+		}
+		//cout << "mu = " << mu << ", zlow = " << zlow << endl;
+		if (abs(mud2(zlow) - mu) < 0.001) points << sigma(zlow);
+		else points << 1.0/0.0;
+		if (mi != 11) points << ",";
 	}
-	fild.close();
+	points.close();
 }
+
 
 void testing(int grids)
 {
@@ -363,8 +296,9 @@ int main()
 	sigmaval = vector<double>(21);
 	for (int i = 0; i <= 20; i++) sigmaval[i] = pow(10.0, (0.1*(double)i) - 1.0);
 	
-	for (int mi = 0; mi < 12; mi++) fiveplot2(grids, mi);
+	//for (int mi = 0; mi < 12; mi++) fiveplot2(grids, mi);
 	for (int gi = 0; gi < 6; gi++) bunin2(1000000, gi);
+	//bunin2(1000000, 2);
 	
 	return 0;
 }

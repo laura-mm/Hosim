@@ -22,6 +22,9 @@ double k;
 ArrayXd mu(4);
 ArrayXd gama(4);
 ArrayXd sigma(4);
+vector<double> mu2val;
+vector<double> mu3val;
+
 
 double phi(double z1)
 {
@@ -57,16 +60,10 @@ double mutot(double M)
 	return m;
 }
 
-double Mgrad(double z1, double help, double MM, double small)
-{
-	double Mcoeff = help*z1/first(z1);
-	double grad = (Mcoeff*(MM + small)) + mutot(MM + small) + k;
-	grad -= (Mcoeff*(MM - small)) + mutot(MM - small) + k;
-	return grad/(2.0*small);
-}
-
 double M(double z1, double help) //this is a solution to a p-order polynomial, so will probably do newton-raphson?
-{
+{	
+	//cout << (z1*help/first(z1)) + mu(0) << endl;
+	//cout << sqrt(pow((z1*help/first(z1)) + mu(0), 2.0) - (4.0*mu(1)*k)) << endl;
 	if (mu(1) == 0.0) return -k/((z1*help/first(z1)) + mu(0));
 	else return ((z1*help/first(z1)) + mu(0) + sqrt(pow((z1*help/first(z1)) + mu(0), 2.0) - (4.0*mu(1)*k)))/(-2.0*mu(1));
 	
@@ -225,7 +222,7 @@ double sig2_crit(double z1, double help) // this should output the critical valu
 // find critical mu3 from critical condition, then can find sigtot?
 // cant really do much without having both mu2 and mu3
 
-double maxsig_z1(double zstart, double help) // returns the z1 where sigma3 reaches a stationary point, depends on mu and gamma
+double maxsig_z1(double zstart, double help) // returns the z1 where sigma3 reaches a stationary point, depends on mu and gamma, for sig2 = 0
 {
 	int grid = 1000000;
 	double small = pow(10.0, -6.0);
@@ -301,7 +298,8 @@ void bunin(int grid1, int grid2, int grid3)
 			if (flag == true) crit << ",";
 			if (sigmap(zstart, help, 3.0) > 0.0) zstart = maxsig_z1(zstart, help);
 			//cout << zstart << endl;
-			crit << mu(0) << "," << mu(1) << "," << noneg(sigmap(z2c, help, 2.0)) << "," << noneg(sigmap(z3c, help, 3.0)) << "," << noneg(sigmap(zstart, help, 3.0)) << "," << M(z2c, help);
+			if (zstart < z3c) crit << mu(0) << "," << mu(1) << "," << noneg(sigmap(z2c, help, 2.0)) << "," << 1.0/0.0 << "," << noneg(sigmap(zstart, help, 3.0)) << "," << M(z2c, help);
+			else crit << mu(0) << "," << mu(1) << "," << noneg(sigmap(z2c, help, 2.0)) << "," << noneg(sigmap(z3c, help, 3.0)) << "," << noneg(sigmap(zstart, help, 3.0)) << "," << M(z2c, help);
 			//if (i == 100 && k == 9000) cout << mu(0) << "," << mu(1) << "," << noneg(sigmap(z2c, help, 2.0)) << "," << noneg(sigmap(z3c, help, 3.0)) << "," << noneg(sigmap(zstart, help, 3.0)) << endl;
 			if (sigmap(zstart, help, 3.0) > 0.0) zstop = zstart;
 			flag = true;
@@ -330,7 +328,7 @@ void bunin(int grid1, int grid2, int grid3)
 			}
 			else
 			{
-				mu(1) = 0.0;
+				mu(1) = 0.0; // this is for the straight line on the p=2 graph
 				if (sigmap(z1, help, 2.0) > 10.0 || sigmap(z1, help, 2.0) < 0.0) break;
 				if (flag == true) div << ",";
 				div << mu(0) << "," << mu(1) << "," << z1 << "," << sigtot(z1, help) << "," << sigmap(z1, help, 2.0) << "," << 1.0/0.0;
@@ -426,27 +424,229 @@ void critical(int grid1, int grid2)
 	file.close();
 }*/
 
-void testing(int grid1)
+double div_z1(double help) // depends on mu2 and mu3
+{
+	if (info == true)
+	{
+	ofstream ab; ab.open("abs.txt");
+
+	cout << "now plotting function for zdiv for mu2 = " << mu(0) << ", mu3 = " << mu(1) << endl;
+	
+	for (int i = 0; i <= 400000; i++)
+	{
+		double z = (10.0*(double)i/400000.0) - 5.0;
+		ab << z << "," << (z*help/first(z)) + mu(0) + (2.0*sqrt(mu(1)*k));
+		if (i != 400000) {ab << ", ";}
+	}
+	ab.close();
+	cout << "finished plotting z" << endl;
+	}
+	
+	
+	double z1 = 0.0;
+	double small = pow(10.0, -6.0);
+	double y = (z1*help/first(z1)) + mu(0) + (2.0*sqrt(mu(1)*k));
+	double grad;
+	double ynew;
+	double znew;
+	while (abs(y) > 0.0)
+	{
+		if (info == true) {cout << "z1 " << z1 << ", y " << y << endl;}
+		grad = (((z1 + small)*help/first(z1 + small)) - ((z1 - small)*help/first(z1 - small)))/(2.0*small);
+		//cout << "grad " << grad << endl;
+		//cout << "grad1 " << ((z1 + small)*help(z1 + small)/first(z1 + small)) << endl;
+		//cout << "z1 + small " << z1 + small << endl;
+		//cout << "help(z1 + small) " << help(z1 + small) << endl;
+		//cout << "first(z1 + small) " << first(z1 + small) << endl;
+		if (grad == 0) {if (abs(y) < pow(10.0, -5.0)) return z1; else return -1.0/0.0;}
+		znew = z1 - (y/grad);
+		ynew = (znew*help/first(znew)) + mu(0) + (2.0*sqrt(mu(1)*k));
+		if (info == true) {cout << "znew " << znew << ", ynew " << ynew << endl;}
+		//cout << "abs(ynew) " << abs(ynew) << ", abs(y) " << abs(y) << endl;
+		if (abs(ynew) >= abs(y) && ((ynew*y) > 0.0 || abs(y) < pow(10.0, -5.0))) break; //{cout << "thisun" << endl; break;}
+		y = ynew;
+		z1 = znew;
+		if (small > pow(10.0, -10.0)) small /= 10.0;
+	}
+	return z1;
+}
+
+double maxsig32_z1(double zstart, double help, double sig2) // returns the z1 where sigma3 reaches a stationary point, depends on mu and gamma, for a given non-zero sig2
+{
+	int grid = 1000000;
+	double small = pow(10.0, -6.0);
+	
+	if (info == true)
+	{
+	ofstream ab; ab.open("abs.txt");
+	//cout << "now plotting function for maxsig for mu = " << mu(1) << endl;
+	
+	for (int i = 0; i <= grid; i++)
+	{
+		double z = 100.0*(double)i/(double)grid - 90.0;
+		double sigrad = (sig3(z + small, help, sig2) - sig3(z - small, help, sig2))/(2.0*small);
+		ab << z << "," << sig3(z, help, sig2) << "," << sigrad;
+		if (i != grid) {ab << ",";}
+	}
+	ab.close();
+	cout << "finished plotting z" << endl;
+	cin >> carryon;
+	}
+	
+	
+	double z1 = zstart;
+	//double small = pow(10.0, -6.0);
+	double y = (sig3(z1 + small, help, sig2) - sig3(z1 - small, help, sig2))/(2.0*small);
+	double grad;
+	//if (info == true) {cout << "z1 " << z1 << ", y " << y << endl;}
+	double ynew;
+	double znew;
+	while (abs(y) > 0.0)
+	{
+		grad = (sig3(z1 + small, help, sig2) + sig3(z1 - small, help, sig2) - (2.0*sig3(z1, help, sig2)))/(small*small);
+		if (grad == 0.0) break;
+		if (info == true) {cout << "small " << small << " grad " << grad << endl;}
+		znew = z1 - (y/grad);
+		ynew = (sig3(znew + small, help, sig2) - sig3(znew - small, help, sig2))/(2.0*small);
+		if (abs(ynew) >= abs(y) && ((ynew*y) > 0.0 || abs(y) < pow(10.0, -5.0))) break;
+		y = ynew;
+		z1 = znew;
+		if (info == true) {cout << "z1 " << z1 << ", y " << y << endl;}
+		if (small > pow(10.0, -10.0)) small /= 10.0;
+	}
+	return z1;	
+}
+
+double maxsigtot_z1(double zstart, double help) // returns the z1 where sigot reaches a stationary point, depends on mu and gamma
+{
+	int grid = 1000000;
+	double small = pow(10.0, -6.0);
+	
+	/*if (abs(mu(1)) < 0.001)
+	{
+	ofstream ab; ab.open("abs.txt");
+	cout << "now plotting function for maxsig for mu = " << mu(1) << endl;
+	
+	for (int i = 0; i <= grid; i++)
+	{
+		double z = 100.0*(double)i/(double)grid - 90.0;
+		double sigrad = (sigmap(z + small, help, 3.0) - sigmap(z - small, help, 3.0))/(2.0*small);
+		ab << z << "," << sigmap(z, help, 3.0) << "," << sigrad;
+		if (i != grid) {ab << ",";}
+	}
+	ab.close();
+	cout << "finished plotting z" << endl;
+	cin >> carryon;
+	}*/
+	
+	
+	double z1 = zstart;
+	//double small = pow(10.0, -6.0);
+	double y = (sigtot(z1 + small, help) - sigtot(z1 - small, help))/(2.0*small);
+	double grad;
+	//if (info == true) {cout << "z1 " << z1 << ", y " << y << endl;}
+	double ynew;
+	double znew;
+	while (abs(y) > 0.0)
+	{
+		grad = (sigtot(z1 + small, help) + sigtot(z1 - small, help) - (2.0*sigtot(z1, help)))/(small*small);
+		if (grad == 0.0) break;
+		//if (info == true) {cout << "small " << small << " grad " << grad << endl;}
+		znew = z1 - (y/grad);
+		ynew = (sigtot(znew + small, help) - sigtot(znew - small, help))/(2.0*small);
+		if (abs(ynew) >= abs(y) && ((ynew*y) > 0.0 || abs(y) < pow(10.0, -5.0))) break;
+		y = ynew;
+		z1 = znew;
+		//if (info == true) {cout << "z1 " << z1 << ", y " << y << endl;}
+		if (small > pow(10.0, -10.0)) small /= 10.0;
+	}
+	return z1;	
+}
+
+void sigmaplane(int grid)
 {
 	double help = 1.0;
 	
-	cout << "sig2 " << sigmap(z2c, help, 2.0) << endl;
-	cout << "sig3 " << sigmap(z3c, help, 3.0) << endl;
+	//cout << "sig2 " << sigmap(z2c, help, 2.0) << endl;
+	//cout << "sig3 " << sigmap(z3c, help, 3.0) << endl;
 	
+	
+	
+	//for (int i2 = 0; i2 <= 3; i2++)
+	//{
+		//mu(0) = mu2val[i2];
+		for (int i3 = 0; i3 <= 9; i3 ++)
+		{
+			mu(0) = mu2val[i3];
+			mu(1) = mu3val[i3];
+			
+			ofstream filec; filec.open("planecrit_" + to_string(i3) + ".txt");
+			for (int i = 0; i <= grid; i++)
+			{
+				//cout << "i1 = " << i << endl;
+				double z1 = 1.2*(double)i/(double)grid - 1.0;
+				// given a value of z1 between the two single p critial points, find sig2 and sig3 at the critical point
+				// z1, sig2, sig3, M
+				filec << z1 << "," << help*sqrt((2.0/second(z1)) - (1.0/phi(z1))) << "," << (help*first(z1)/M(z1, help))*sqrt((2.0/(3.0*second(z1)))*((1.0/phi(z1)) - (1.0/second(z1)))) << "," << M(z1, help);
+				if (i != grid) filec << ",";
+			}
+			filec.close();
+			
+			ofstream filem; filem.open("planemax_" + to_string(i3) + ".txt");
+			double zstart = 0.0;
+			double sigstop = 0.0;
+			for (int i = 0; i <= grid; i++)
+			{
+				//cout << "i2 = " << i << endl;
+				double sig2 = 10.0*(double)i/(double)grid;
+				zstart = maxsig32_z1(zstart, help, sig2);
+				if (sig3(zstart, help, sig2) >= 0.0) sigstop = sig2;
+				//cout << "sig2 = " << sig2 << ", z = " << zstart << ", sig3 = " << sig3(zstart, help, sig2) << endl;
+				filem << zstart << "," << sig2 << "," << sig3(zstart, help, sig2) << "," << sigtot(zstart, help) << "," << M(zstart, help);
+				// z1, sig2, sig3, sigtot, M
+				if (i != grid) filem << ",";
+			}
+			filem.close();
+			
+			
+			ofstream filed; filed.open("planediv_" + to_string(i3) + ".txt");
+			double z1 = div_z1(help);
+			for (int i = 0; i <= grid; i++)
+			{
+				//cout << "i3 = " << i << endl;
+				//double sig2 = (5.0 - sigstop)*(double)i/(double)grid + sigstop;
+				double sig2 = (5.0*(double)i/(double)grid);
+				if (mu(1) >= 0.0) filed << sig2 << "," << sig3(z1, help, sig2);
+				else filed << 1.0/0.0 << "," << 1.0/0.0;
+				if (i != grid) filed << ",";
+			}
+			filed.close();
+		}
+	//}
+	
+}
+
+
+
+
+
+void testing(int grid)
+{
 	ofstream file; file.open("testing.txt");
-	for (int i = 0; i <= grid1; i++)
+	double help = 1.0;
+	double zstart = maxsigtot_z1(-0.8, help);
+	cout << "sigtot = " << zstart << endl;
+	for (int i = 0; i <= grid; i++)
 	{
-		//double z1 = (z2c - z3c)*(double)i/(double)grid1 + z3c;
-		double z1 = 100.0*(double)i/(double)grid1 - 50.0;
-		//if (z1 < 0.0 && z1 > -1.0){
-		//cout << endl << z1 << ", " << z1*help/first(z1) << ", " << sigmap(z1, help, 2.0) << endl;
-		// given a value of z1 between the two single p critial points, find sig2 and sig3 at the critical point
-		file << z1 << "," << help*sqrt((2.0/second(z1)) - (1.0/phi(z1))) << "," << (help*first(z1)/M(z1, help))*sqrt((2.0/(3.0*second(z1)))*((1.0/phi(z1)) - (1.0/second(z1)))) << "," << M(z1, help);
-		//cout << z1 << "," << help*sqrt((2.0/second(z1)) - (1.0/phi(z1))) << "," << (help*first(z1)/M(z1, help))*sqrt((2.0/(3.0*second(z1)))*((1.0/phi(z1)) - (1.0/second(z1)))) << "," << M(z1, help) << endl;
-		if (i != grid1) file << ",";
+		double sig2 = 5.0*(double)i/(double)grid;
+		double zstart = maxsig32_z1(zstart, help, sig2);
+		//cout << "sig2 = " << sig2 << ", z = " << zstart << ", sig3 = " << sig3(zstart, help, sig2) << endl;
+		file << zstart << "," << sig2 << "," << sig3(zstart, help, sig2) << "," << sigtot(zstart, help) << "," << M(zstart, help);
+		if (i != grid) file << ",";
 	}
 	file.close();
 }
+		
 
 void s3test(int grid1, int grid2, int grid3) // investigate M with mu2 and mu3 for sigma3 = 0
 {
@@ -493,19 +693,55 @@ int main()
 	k = 1.0;
 	z2c = crit_z1(2.0);
 	z3c = crit_z1(3.0);
-	cout << "z2c " << z2c << endl;
-	cout << "z3c " << z3c << endl;
+	//cout << "z2c " << z2c << endl;
+	//cout << "z3c " << z3c << endl;
+	
+	//mu2val = vector<double>{-4.0, 1.0, 4.0};
+	//mu3val = vector<double>{-4.0, 0.0, 4.0};
+	
+	mu2val = vector<double>{-4.0, -2.0, 2.0, -4.0, -2.0, 2.0, -3.0, -2.0, 2.0};
+	mu3val = vector<double>{5.0, 2.0, 2.0, 2.0, 0.0, 0.0, 1.0, -2.0, -2.0};
 	
 	
+	mu(0) = -4.0;
+	mu(1) = 2.0;
+	
+	double help = 1.0;
+	//info = true;
+	int grid = 10;
+	for (int i = 0; i <= grid; i++)
+	{
+		//cout << "i1 = " << i << endl;
+		double z1 = 1.2*(double)i/(double)grid - 1.0;
+		// given a value of z1 between the two single p critial points, find sig2 and sig3 at the critical point
+		// z1, sig2, sig3, M
+		cout << z1 << "," << help*sqrt((2.0/second(z1)) - (1.0/phi(z1))) << "," << (help*first(z1)/M(z1, help))*sqrt((2.0/(3.0*second(z1)))*((1.0/phi(z1)) - (1.0/second(z1)))) << "," << M(z1, help) << endl;
+	}
 
 	
-	mu(0) = -3.0;
-	mu(1) = 2.5;
+	/*	cout << "z1 " << z1 << endl;
+		cout << "phi " << phi(z1) << endl;
+		cout << "first " << first(z1) << endl;
+		cout << "second " << second(z1) << endl;
+		cout << "X " << X(z1, help) << endl;
+		cout << "gamatot " << gamatot(z1, help) << endl;
+		double mm = M(z1, help);
+		//cout << "M " << M(z1, help) << endl;
+		//cout << "mutot " << mutot(M(z1, help)) << endl;
+		//cout << "sigtot " << sigtot(z1, help) << endl;
+		//cout << "q " << q(z1, help) << endl << endl;
+		*/ 
+		
+	
+	
+	//sigmaplane(1000000);
+
+	
 	
 	//cout << 1.0*sqrt(2.0/(3.0*pow(second(z3c), 2.0))) << ", " << pow(first(z3c)/M(z3c, 1.0), 1.0) << endl;
 	
 	
-	testing(1000000); // for critical point between the two orders
+	//testing(1000000); // for critical point between the two orders
 	
 	//bunin(100, 12000, 10000);
 	
