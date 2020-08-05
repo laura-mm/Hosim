@@ -50,7 +50,7 @@ for i in range(101):
 	
 	crit2 = np.loadtxt("critp2_{0}.txt".format(i), delimiter = ",")
 	"""
-	if (i == 10):
+	if (i == 60):
 		print("mu2 = {0}".format(critline[0][0]))
 		plt.figure(7)
 		plt.plot([-4, crit2[1]], [crit2[2], crit2[2]], "r")
@@ -58,7 +58,7 @@ for i in range(101):
 		plt.figure(8)
 		plt.plot(divline[1], divline[5], "b")
 		plt.plot(critline[1], critline[4], "b")
-		plt.plot(critline[1], critline[3], "r")
+		#plt.plot(critline[1], critline[3], "r")
 	"""
 	#ax1.plot(critline[0], critline[1], critline[2], "r")
 	ax1.plot([crit2[0], crit2[0]], [-4, crit2[1]], [crit2[2], crit2[2]], "r")
@@ -147,6 +147,6 @@ plt.plot(test[3], test[4])
 plt.ylim([0,10])
 plt.xlim([0,10])
 """
-
+#plt.fig_to_html()
 plt.show()
 #mpld3.show()
